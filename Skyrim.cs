@@ -154,6 +154,8 @@ namespace CrowdControl.Games.Packs
                 new Effect("Horse", "spawn_horse", "animals"),
                 #endregion
 
+                new Effect("Clear Bound State", "unbound"),
+
                 new Effect("Spawn NPC", "npcs", ItemKind.Folder),
                 new Effect("Balgruuf the Greater", "spawnb_balgruuf", "npcs"),
                 new Effect("Sheogorath", "spawnb_sheo", "npcs"),
@@ -265,6 +267,21 @@ namespace CrowdControl.Games.Packs
 
                 #endregion
             };
+
+        /*public override List<(string, Action)> MenuActions
+        {
+            get
+            {
+                List<(string, Action)> result = new List<(string, Action)>
+                {
+                    ("Clear Bound State", () =>
+                    {
+                        //EffectRequest request = new EffectRequest()
+                    })
+                };
+                return result;
+            }
+        }*/
 
         protected override void StartEffect(EffectRequest request)
         {
