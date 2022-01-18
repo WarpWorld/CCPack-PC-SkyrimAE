@@ -9,7 +9,7 @@ using JetBrains.Annotations;
 namespace CrowdControl.Games.Packs
 {
     [UsedImplicitly]
-    public class Skyrim : SimpleTCPPack
+    public class SkyrimAE : SimpleTCPPack
     {
         private readonly Windows10 _win10;
         private readonly MethodInfo _win10_start_effect = typeof(Windows10).GetMethod("StartEffect", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(EffectRequest) }, null);
@@ -20,7 +20,7 @@ namespace CrowdControl.Games.Packs
 
         public override ushort Port => 59420;
 
-        public Skyrim([NotNull] IPlayer player, [NotNull] Func<CrowdControlBlock, bool> responseHandler, [NotNull] Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
+        public SkyrimAE([NotNull] IPlayer player, [NotNull] Func<CrowdControlBlock, bool> responseHandler, [NotNull] Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
         {
             _win10 = new Windows10(player, _ => true, _ => { });
             Effects.AddRange(_win10.Effects.Where(e => _win10_includes.Contains(e.Code)).Select(e =>
@@ -30,7 +30,7 @@ namespace CrowdControl.Games.Packs
             }));
         }
 
-        public override Game Game { get; } = new Game(59, "The Elder Scrolls V: Skyrim Special Edition", "Skyrim", "PC", ConnectorType.SimpleTCPConnector);
+        public override Game Game { get; } = new Game(59, "The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
 
         public sealed override List<Effect> Effects { get; } = new List<Effect>
             {
