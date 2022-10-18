@@ -14,13 +14,13 @@ namespace CrowdControl.Games.Packs
         private readonly Windows10 _win10;
         private readonly MethodInfo _win10_start_effect = typeof(Windows10).GetMethod("StartEffect", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(EffectRequest) }, null);
         private readonly MethodInfo _win10_stop_effect = typeof(Windows10).GetMethod("StopEffect", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(EffectRequest) }, null);
-        private readonly HashSet<string> _win10_includes = new(new[] { "invdisplay", "invmouse", "sendleftclick", "sendrightclick", "randmouse", "mousebuttonswap" }, StringComparer.InvariantCultureIgnoreCase);
+        private readonly HashSet<string> _win10_includes = new HashSet<string>(new[] { "invdisplay", "invmouse", "sendleftclick", "sendrightclick", "randmouse", "mousebuttonswap" }, StringComparer.InvariantCultureIgnoreCase);
 
         public override string Host => "127.0.0.1";
 
         public override ushort Port => 59420;
 
-        public SkyrimAE(IPlayer player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
+        public SkyrimAE([NotNull] IPlayer player, [NotNull] Func<CrowdControlBlock, bool> responseHandler, [NotNull] Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
         {
             _win10 = new Windows10(player, _ => true, _ => { });
             Effects.AddRange(_win10.Effects.Where(e => _win10_includes.Contains(e.Code)).Select(e =>
@@ -30,10 +30,10 @@ namespace CrowdControl.Games.Packs
             }));
         }
 
-        public override Game Game { get; } = new(59, "The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
+        public override Game Game { get; } = new Game(59, "The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
 
-        public sealed override List<Effect> Effects { get; } = new()
-        {
+        public sealed override List<Effect> Effects { get; } = new List<Effect>
+            {
                 #region Give Item (folder)
 
                 new Effect("Give Items", "items", ItemKind.Folder),
@@ -43,12 +43,14 @@ namespace CrowdControl.Games.Packs
                 new Effect("Magika Potion", "give_magika_potion", "items"),
                 new Effect("Lockpicks (5)", "give_lockpicks", "items"),
                 new Effect("Arrows (5)", "give_arrows", "items"),
+                new Effect("Baked Potatoes", "give_bpotatos", "items"),
                 new Effect("Dragon Bone Weapon", "give_dragonweap", "items"),
                 new Effect("Dragon Bone", "give_dragonbone", "items"),
                 new Effect("Dragon Scales", "give_dragonscale", "items"),
                 new Effect("Diamond", "give_diamond", "items"),
                 new Effect("Iron Ingot", "give_iron", "items"),
                 new Effect("Gold Ingot", "give_gold", "items"),
+                new Effect("Potatoes (5)", "give_potatos", "items"),
                 new Effect("Silver Ingot", "give_silver", "items"),
                 new Effect("Steel Ingot", "give_steel", "items"),
                 new Effect("Gold (10)", "give_gold_10", "items"),
@@ -202,7 +204,7 @@ namespace CrowdControl.Games.Packs
                 new Effect("Kill Player", "kill_player", "health"),
                 new Effect("Damage Player", "damage", "health"),
                 new Effect("10% Health", "to_ten_health", "health"),
-                new Effect("Infinite Stamina (30 seconds)", "infinite_stamina", "health"),
+                new Effect("Infinite Stamina", "infinite_stamina", "health") { Duration = TimeSpan.FromSeconds(30) },
                 new Effect("Deplete Stamina", "deplete_stamina", "health"),
 
                 new Effect("Buffs and Debuffs", "buffs", ItemKind.Folder),
@@ -211,13 +213,13 @@ namespace CrowdControl.Games.Packs
                 new Effect("Increase Speed (30 seconds)", "increase_speed", "buffs"),
                 //new Effect("Increase Jump (30 seconds)", "increase_jump", "buffs"),
                 new Effect("Increased Damage (30 seconds)", "increase_damage", "buffs"),
-                new Effect("Disable Crouch (1 minute)", "disable_crouch", "buffs"),
+                new Effect("Disable Crouch", "disable_crouch", "buffs") { Duration = TimeSpan.FromSeconds(60) },
                 new Effect("Destroy/Unlearn Left Hand", "destroy_left", "buffs"),
                 new Effect("Destroy/Unlearn Right Hand", "destroy_right", "buffs"),
                 new Effect("Decrease Speed (30 seconds)", "decrease_speed", "buffs"),
                 //new Effect("Decrease Jump (30 seconds)", "decrease_jump", "buffs"),
                 new Effect("Decrease Damage (30 seconds)", "decrease_damage", "buffs"),
-                new Effect("Disable Fast Travel (30 seconds)", "disable_fast_travel", "buffs"),
+                new Effect("Disable Fast Travel", "disable_fast_travel", "buffs") { Duration = TimeSpan.FromSeconds(30) },
                 new Effect("Freeze Player", "freeze", "buffs"),
                 //new Effect("Lightning Strike", "lightning", "buffs"),
                 
