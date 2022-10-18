@@ -30,7 +30,7 @@ namespace CrowdControl.Games.Packs
             }));
         }
 
-        public override Game Game { get; } = new(59, "The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
+        public override Game Game { get; } = new(123, "The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
 
         public sealed override List<Effect> Effects { get; } = new List<Effect>
             {
