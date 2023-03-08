@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using CrowdControl.Common;
 using JetBrains.Annotations;
@@ -20,7 +19,7 @@ namespace CrowdControl.Games.Packs
 
         public override ushort Port => 59420;
 
-        public SkyrimAE(IPlayer player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
+        public SkyrimAE(Player player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
         {
             _win10 = new Windows10(player, _ => true, _ => { });
             Effects.AddRange(_win10.Effects.Where(e => _win10_includes.Contains(e.Code)).Select(e =>
@@ -32,7 +31,7 @@ namespace CrowdControl.Games.Packs
 
         public override Game Game { get; } = new(123, "The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
 
-        public sealed override List<Effect> Effects { get; } = new List<Effect>
+        public override EffectList Effects { get; } = new Effect[]
             {
                 #region Give Item (folder)
 
@@ -287,7 +286,7 @@ namespace CrowdControl.Games.Packs
 
         protected override void StartEffect(EffectRequest request)
         {
-            if (_win10.Effects.Any(e => string.Equals(e.Code, request.BaseCode, StringComparison.InvariantCultureIgnoreCase)))
+            if (_win10.Effects.Any(e => string.Equals(e.Code, request.EffectID, StringComparison.InvariantCultureIgnoreCase)))
             {
                 _win10_start_effect.Invoke(_win10, new object[] { request });
             }
@@ -296,7 +295,7 @@ namespace CrowdControl.Games.Packs
 
         protected override bool StopEffect(EffectRequest request)
         {
-            if (_win10.Effects.Any(e => string.Equals(e.Code, request.BaseCode, StringComparison.InvariantCultureIgnoreCase)))
+            if (_win10.Effects.Any(e => string.Equals(e.Code, request.EffectID, StringComparison.InvariantCultureIgnoreCase)))
             {
                 return (bool)_win10_stop_effect.Invoke(_win10, new object[] { request });
             }
