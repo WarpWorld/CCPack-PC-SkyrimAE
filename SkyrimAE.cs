@@ -19,7 +19,7 @@ namespace CrowdControl.Games.Packs
 
         public override ushort Port => 59420;
 
-        public SkyrimAE(Player player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
+        public SkyrimAE(UserRecord player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
         {
             _win10 = new Windows10(player, _ => true, _ => { });
             Effects.AddRange(_win10.Effects.Where(e => _win10_includes.Contains(e.Code)).Select(e =>
@@ -31,243 +31,236 @@ namespace CrowdControl.Games.Packs
 
         public override Game Game { get; } = new(123, "The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
 
-        public override EffectList Effects { get; } = new Effect[]
+        public override EffectList Effects
+        {
+            get
             {
-                #region Give Item (folder)
+                List<Effect> effects = new List<Effect>
+                {
+                    #region Give Item (folder)
 
-                new Effect("Give Items", "items", ItemKind.Folder),
-                new Effect("Apples (5)", "give_apple", "items"),
-                //new Effect("Spawn Cheese Wheel", "spawn_applecheese_wheel", "items"),
-                new Effect("Health Potion", "give_health_potion", "items"),
-                new Effect("Magika Potion", "give_magika_potion", "items"),
-                new Effect("Lockpicks (5)", "give_lockpicks", "items"),
-                new Effect("Arrows (5)", "give_arrows", "items"),
-                new Effect("Baked Potatoes", "give_bpotatos", "items"),
-                new Effect("Dragon Bone Weapon", "give_dragonweap", "items"),
-                new Effect("Dragon Bone", "give_dragonbone", "items"),
-                new Effect("Dragon Scales", "give_dragonscale", "items"),
-                new Effect("Diamond", "give_diamond", "items"),
-                new Effect("Iron Ingot", "give_iron", "items"),
-                new Effect("Gold Ingot", "give_gold", "items"),
-                new Effect("Potatoes (5)", "give_potatos", "items"),
-                new Effect("Silver Ingot", "give_silver", "items"),
-                new Effect("Steel Ingot", "give_steel", "items"),
-                new Effect("Gold (10)", "give_gold_10", "items"),
-                new Effect("Gold (100)", "give_gold_100", "items"),
-                new Effect("Gold (1000)", "give_gold_1000", "items"),
-                new Effect("Soul Gem (Petty)", "gem_petty", "items"),
-                new Effect("Soul Gem (Lesser)", "gem_lesser", "items"),
-                new Effect("Soul Gem (Common)", "gem_common", "items"),
-                new Effect("Soul Gem (Greater)", "gem_greater", "items"),
-                new Effect("Soul Gem (Grand)", "gem_grand", "items"),
-                new Effect("Exploding Spider Scroll", "give_spider", "items"),
-                new Effect("Dwemer's Curse", "dwemercurse", "items"),
-                new Effect("Cheese-splosion", "cheeserain", "items"),
+                    new Effect("Give Apples (5)", "give_apple") { Category = "Give Items" },
+                    //new Effect("Spawn Cheese Wheel", "spawn_applecheese_wheel") { Category = "Give Items" },
+                    new Effect("Give Health Potion", "give_health_potion") { Category = "Give Items" },
+                    new Effect("Give Magika Potion", "give_magika_potion") { Category = "Give Items" },
+                    new Effect("Give Lockpicks (5)", "give_lockpicks") { Category = "Give Items" },
+                    new Effect("Give Arrows (5)", "give_arrows") { Category = "Give Items" },
+                    new Effect("Give Baked Potatoes", "give_bpotatos") { Category = "Give Items" },
+                    new Effect("Give Dragon Bone Weapon", "give_dragonweap") { Category = "Give Items" },
+                    new Effect("Give Dragon Bone", "give_dragonbone") { Category = "Give Items" },
+                    new Effect("Give Dragon Scales", "give_dragonscale") { Category = "Give Items" },
+                    new Effect("Give Diamond", "give_diamond") { Category = "Give Items" },
+                    new Effect("Give Iron Ingot", "give_iron") { Category = "Give Items" },
+                    new Effect("Give Gold Ingot", "give_gold") { Category = "Give Items" },
+                    new Effect("Give Potatoes (5)", "give_potatos") { Category = "Give Items" },
+                    new Effect("Give Silver Ingot", "give_silver") { Category = "Give Items" },
+                    new Effect("Give Steel Ingot", "give_steel") { Category = "Give Items" },
+                    new Effect("Give Gold (10)", "give_gold_10") { Category = "Give Items" },
+                    new Effect("Give Gold (100)", "give_gold_100") { Category = "Give Items" },
+                    new Effect("Give Gold (1000)", "give_gold_1000") { Category = "Give Items" },
+                    new Effect("Give Soul Gem (Petty)", "gem_petty") { Category = "Give Items" },
+                    new Effect("Give Soul Gem (Lesser)", "gem_lesser") { Category = "Give Items" },
+                    new Effect("Give Soul Gem (Common)", "gem_common") { Category = "Give Items" },
+                    new Effect("Give Soul Gem (Greater)", "gem_greater") { Category = "Give Items" },
+                    new Effect("Give Soul Gem (Grand)", "gem_grand") { Category = "Give Items" },
+                    new Effect("Give Exploding Spider Scroll", "give_spider") { Category = "Give Items" },
+                    new Effect("Give Dwemer's Curse", "dwemercurse") { Category = "Give Items" },
+                    new Effect("Give Cheese-splosion", "cheeserain") { Category = "Give Items" },
 
-                new Effect("Skills", "skills", ItemKind.Folder),
-                new Effect("One Handed Up", "onehanded_up", "skills"),
-                new Effect("One Handed Down", "onehanded_down", "skills"),
-                new Effect("Two Handed Up", "twohanded_up", "skills"),
-                new Effect("Two Handed Down", "twohanded_down", "skills"),
-                new Effect("Archery Up", "marksman_up", "skills"),
-                new Effect("Archery Down", "marksman_down", "skills"),
-                new Effect("Block Up", "block_up", "skills"),
-                new Effect("Block Down", "block_down", "skills"),
-                new Effect("Smithing Up", "smithing_up", "skills"),
-                new Effect("Smithing Down", "smithing_down", "skills"),
-                new Effect("Heavy Armor Up", "heavyarmor_up", "skills"),
-                new Effect("Heavy Armor Down", "heavyarmor_down", "skills"),
-                new Effect("Light Armor Up", "lightarmor_up", "skills"),
-                new Effect("Light Armor Down", "lightarmor_down", "skills"),
-                new Effect("Pickpocket Up", "pickpocket_up", "skills"),
-                new Effect("Pickpocket Down", "pickpocket_down", "skills"),
-                new Effect("Lock Picking Up", "lockpicking_up", "skills"),
-                new Effect("Lock Picking Down", "lockpicking_down", "skills"),
-                new Effect("Sneak Up", "sneak_up", "skills"),
-                new Effect("Sneak Down", "sneak_down", "skills"),
-                new Effect("Alchemy Up", "alchemy_up", "skills"),
-                new Effect("Alchemy Down", "alchemy_down", "skills"),
-                new Effect("Speech Up", "speechcraft_up", "skills"),
-                new Effect("Speech Down", "speechcraft_down", "skills"),
-                new Effect("Alteration Up", "alteration_up", "skills"),
-                new Effect("Alteration Down", "alteration_down", "skills"),
-                new Effect("Conjuration Up", "conjuration_up", "skills"),
-                new Effect("Conjuration Down", "conjuration_down", "skills"),
-                new Effect("Destruction Up", "destruction_up", "skills"),
-                new Effect("Destruction Down", "destruction_down", "skills"),
-                new Effect("Illusion Up", "illusion_up", "skills"),
-                new Effect("Illusion Down", "illusion_down", "skills"),
-                new Effect("Restoration Up", "restoration_up", "skills"),
-                new Effect("Restoration Down", "restoration_down", "skills"),
-                new Effect("Enchanting Up", "enchanting_up", "skills"),
-                new Effect("Enchanting Down", "enchanting_down", "skills"),
-                
 
+                    new Effect("One Handed Up", "onehanded_up") { Category = "Skills" },
+                    new Effect("One Handed Down", "onehanded_down") { Category = "Skills" },
+                    new Effect("Two Handed Up", "twohanded_up") { Category = "Skills" },
+                    new Effect("Two Handed Down", "twohanded_down") { Category = "Skills" },
+                    new Effect("Archery Up", "marksman_up") { Category = "Skills" },
+                    new Effect("Archery Down", "marksman_down") { Category = "Skills" },
+                    new Effect("Block Up", "block_up") { Category = "Skills" },
+                    new Effect("Block Down", "block_down") { Category = "Skills" },
+                    new Effect("Smithing Up", "smithing_up") { Category = "Skills" },
+                    new Effect("Smithing Down", "smithing_down") { Category = "Skills" },
+                    new Effect("Heavy Armor Up", "heavyarmor_up") { Category = "Skills" },
+                    new Effect("Heavy Armor Down", "heavyarmor_down") { Category = "Skills" },
+                    new Effect("Light Armor Up", "lightarmor_up") { Category = "Skills" },
+                    new Effect("Light Armor Down", "lightarmor_down") { Category = "Skills" },
+                    new Effect("Pickpocket Up", "pickpocket_up") { Category = "Skills" },
+                    new Effect("Pickpocket Down", "pickpocket_down") { Category = "Skills" },
+                    new Effect("Lock Picking Up", "lockpicking_up") { Category = "Skills" },
+                    new Effect("Lock Picking Down", "lockpicking_down") { Category = "Skills" },
+                    new Effect("Sneak Up", "sneak_up") { Category = "Skills" },
+                    new Effect("Sneak Down", "sneak_down") { Category = "Skills" },
+                    new Effect("Alchemy Up", "alchemy_up") { Category = "Skills" },
+                    new Effect("Alchemy Down", "alchemy_down") { Category = "Skills" },
+                    new Effect("Speech Up", "speechcraft_up") { Category = "Skills" },
+                    new Effect("Speech Down", "speechcraft_down") { Category = "Skills" },
+                    new Effect("Alteration Up", "alteration_up") { Category = "Skills" },
+                    new Effect("Alteration Down", "alteration_down") { Category = "Skills" },
+                    new Effect("Conjuration Up", "conjuration_up") { Category = "Skills" },
+                    new Effect("Conjuration Down", "conjuration_down") { Category = "Skills" },
+                    new Effect("Destruction Up", "destruction_up") { Category = "Skills" },
+                    new Effect("Destruction Down", "destruction_down") { Category = "Skills" },
+                    new Effect("Illusion Up", "illusion_up") { Category = "Skills" },
+                    new Effect("Illusion Down", "illusion_down") { Category = "Skills" },
+                    new Effect("Restoration Up", "restoration_up") { Category = "Skills" },
+                    new Effect("Restoration Down", "restoration_down") { Category = "Skills" },
+                    new Effect("Enchanting Up", "enchanting_up") { Category = "Skills" },
+                    new Effect("Enchanting Down", "enchanting_down") { Category = "Skills" },
+
+
+                    #endregion
+
+                    #region Take Away Item
+
+                    //new Effect("Health Potion", "take_health_potion") { Category = "Take Items" },
+                    //new Effect("Magika Potion", "take_magika_potion") { Category = "Take Items" },
+                    new Effect("Take Lockpick", "take_lockpick") { Category = "Take Items" },
+                    new Effect("Take Arrows", "take_arrows") { Category = "Take Items" },
+                    new Effect("Take Gold (10)", "take_gold_10") { Category = "Take Items" },
+                    new Effect("Take Gold (100)", "take_gold_100") { Category = "Take Items" },
+                    new Effect("Take Gold (1000)", "take_gold_1000") { Category = "Take Items" },
+
+                    #endregion
+
+                    #region Spawn Enemy (folder)
+
+                    //new Effect("Spawn Angry Chicken", "spawn_angry_chicken") { Category = "Enemies" },
+
+                    new Effect("Dragon", "spawn_dragon") { Category = "Enemies" },
+                    new Effect("Spawn Witch", "spawn_witch") { Category = "Enemies" },
+                    new Effect("Spawn Draugr", "spawn_draugr") { Category = "Enemies" },
+                    new Effect("Spawn Draugr Overlord", "spawnb_draugr_over") { Category = "Enemies" },
+                    new Effect("Spawn Bandit", "spawn_bandit") { Category = "Enemies" },
+                    new Effect("Spawn Bandit Party", "spawn_bandits") { Category = "Enemies" },
+                    new Effect("Spawn Skeleton", "spawn_skeleton") { Category = "Enemies" },
+                    new Effect("Spawn Flame Atronach", "spawnb_flameatronach") { Category = "Enemies" },
+                    new Effect("Spawn Frost Atronach", "spawnb_frostatronach") { Category = "Enemies" },
+                    new Effect("Spawn Storm Atronach", "spawnb_stormatronach") { Category = "Enemies" },
+                    new Effect("Spawn Mammoth", "spawnb_mammoth") { Category = "Enemies" },
+                    new Effect("Spawn Giant Spider", "spawnb_giantspider") { Category = "Enemies" },
+                    new Effect("Spawn Spriggan", "spawnb_spriggan") { Category = "Enemies" },
+                    new Effect("Spawn Mudcrabs", "spawnb_mudcrab") { Category = "Enemies" },
+                    new Effect("Spawn Hargraven", "spawnb_hagraven") { Category = "Enemies" },
+                    new Effect("Spawn Dwarven Centurion", "spawnb_dwarvencenturion") { Category = "Enemies" },
+                    new Effect("Spawn Ice Wraith", "spawnb_ice_wraith") { Category = "Enemies" },
+                    new Effect("Spawn Frost Troll", "spawnb_frost_troll") { Category = "Enemies" },
+
+
+                    new Effect("Spawn Bear", "spawnb_bear") { Category = "Animals" },
+                    new Effect("Spawn Chicken", "spawnb_chicken") { Category = "Animals" },
+                    new Effect("Spawn Cow", "spawnb_cow") { Category = "Animals" },
+                    new Effect("Spawn Deer", "spawnb_deer") { Category = "Animals" },
+                    new Effect("Spawn Dog", "spawnb_dog") { Category = "Animals" },
+                    new Effect("Spawn Goat", "spawnb_goat") { Category = "Animals" },
+                    new Effect("Spawn Wolf", "spawnb_wolf") { Category = "Animals" },
+                    new Effect("Spawn Horse", "spawn_horse") { Category = "Animals" },
+                    #endregion
+
+                    new Effect("Clear Bound State", "unbound"),
+
+                    new Effect("Spawn Balgruuf the Greater", "spawnb_balgruuf") { Category = "NPCs" },
+                    new Effect("Spawn Sheogorath", "spawnb_sheo") { Category = "NPCs" },
+                    new Effect("Spawn Cicero", "spawnb_cicero") { Category = "NPCs" },
+                    new Effect("Spawn Aela the Huntress", "spawnb_aela") { Category = "NPCs" },
+                    new Effect("Spawn Jarl Ulfric Stormcloak", "spawnb_ulfric") { Category = "NPCs" },
+                    new Effect("Spawn Serana", "spawnb_serana") { Category = "NPCs" },
+                    new Effect("Spawn Mjoll the Lioness", "spawnb_mjoll") { Category = "NPCs" },
+                    new Effect("Spawn M'aiq the Liar", "spawnb_maiq") { Category = "NPCs" },
+                    new Effect("Spawn Legate Rikke", "spawnb_rikke") { Category = "NPCs" },
+
+
+                    new Effect("Set Time to Midnight", "time_midnight") { Category = "Time" },
+                    new Effect("Set Time to Morning", "time_morning") { Category = "Time" },
+                    new Effect("Set Time to Noon", "time_noon") { Category = "Time" },
+                    new Effect("Set Time to Evening", "time_evening") { Category = "Time" },
+
+
+                    new Effect("Set Weather to Clear", "weather_clear") { Category = "Weather" },
+                    new Effect("Set Weather to Rain", "weather_storm") { Category = "Weather" },
+                    new Effect("Set Weather to Snow", "weather_snow") { Category = "Weather" },
+                    new Effect("Set Weather to Red", "weather_red") { Category = "Weather" },
+                    new Effect("Set Weather to Green", "weather_green") { Category = "Weather" },
+                    new Effect("Set Weather to Blue", "weather_blue") { Category = "Weather" },
+
+                    new Effect("Change Race to Argonian", "race_argonian") { Category = "Race" },
+                    new Effect("Change Race to Breton", "race_breton") { Category = "Race" },
+                    new Effect("Change Race to Dark Elf", "race_darkelf") { Category = "Race" },
+                    new Effect("Change Race to High Elf", "race_highelf") { Category = "Race" },
+                    new Effect("Change Race to Imperial", "race_imperial") { Category = "Race" },
+                    new Effect("Change Race to Khajiit", "race_khajiit") { Category = "Race" },
+                    new Effect("Change Race to Nord", "race_nord") { Category = "Race" },
+                    new Effect("Change Race to Orc", "race_orc") { Category = "Race" },
+                    new Effect("Change Race to Redguard", "race_redguard") { Category = "Race" },
+                    new Effect("Change Race to Wood Elf", "race_woodelf") { Category = "Race" },
+
+
+                    new Effect("Heal Player", "heal") { Category = "Health and Stamina" },
+                    new Effect("Full Heal", "full_heal") { Category = "Health and Stamina" },
+                    new Effect("Kill Player", "kill_player") { Category = "Health and Stamina" },
+                    new Effect("Damage Player", "damage") { Category = "Health and Stamina" },
+                    new Effect("10% Health", "to_ten_health") { Category = "Health and Stamina" },
+                    new Effect("Infinite Stamina", "infinite_stamina") { Category = "Health and Stamina", Duration = TimeSpan.FromSeconds(30) },
+                    new Effect("Deplete Stamina", "deplete_stamina") { Category = "Health and Stamina" },
+
+                    new Effect("Good Random Spell", "good_spell") { Category = "Buffs and Debuffs" },
+                    new Effect("Bad Random Spell", "bad_spell") { Category = "Buffs and Debuffs" },
+                    new Effect("Increase Speed (30 seconds)", "increase_speed") { Category = "Buffs and Debuffs" },
+                    //new Effect("Increase Jump (30 seconds)", "increase_jump") { Category = "Buffs and Debuffs" },
+                    new Effect("Increased Damage (30 seconds)", "increase_damage") { Category = "Buffs and Debuffs" },
+                    new Effect("Disable Crouch", "disable_crouch") { Category = "Buffs and Debuffs", Duration = TimeSpan.FromSeconds(60) },
+                    new Effect("Destroy/Unlearn Left Hand", "destroy_left") { Category = "Buffs and Debuffs" },
+                    new Effect("Destroy/Unlearn Right Hand", "destroy_right") { Category = "Buffs and Debuffs" },
+                    new Effect("Decrease Speed (30 seconds)", "decrease_speed") { Category = "Buffs and Debuffs" },
+                    //new Effect("Decrease Jump (30 seconds)", "decrease_jump") { Category = "Buffs and Debuffs" },
+                    new Effect("Decrease Damage (30 seconds)", "decrease_damage") { Category = "Buffs and Debuffs" },
+                    new Effect("Disable Fast Travel", "disable_fast_travel") { Category = "Buffs and Debuffs", Duration = TimeSpan.FromSeconds(30) },
+                    new Effect("Freeze Player", "freeze") { Category = "Buffs and Debuffs" },
+                    //new Effect("Lightning Strike", "lightning") { Category = "Buffs and Debuffs" },
+
+
+
+                    new Effect("Use Scroll - Mayhem", "scroll_mayhem") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Hysteria", "scroll_hysteria") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Harmony", "scroll_harmony") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Water Breathing", "scroll_water") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Conjure Flame Atronach", "scroll_cflame") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Conjure Frost Atronach", "scroll_cfrost") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Conjure Storm Atronach", "scroll_cstorm") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Flame Thrall", "scroll_tflame") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Frost Thrall", "scroll_tfrost") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Storm Thrall", "scroll_tstorm") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Blizzard", "scroll_blizzard") { Category = "Scrolls" },
+                    new Effect("Use Scroll - Invisibility", "scroll_invis") { Category = "Scrolls" },
+
+                    #region Fast Travel
+
+                    new Effect("Random Fast Travel", "random_fast_travel") { Category = "Fast Travel" },
+                    new Effect("Fast Travel to Whiterun", "fast_travel_whiterun") { Category = "Fast Travel" },
+                    new Effect("Fast Travel to Riverwood", "fast_travel_riverwood") { Category = "Fast Travel" },
+                    new Effect("Fast Travel to Solitude", "fast_travel_solitude") { Category = "Fast Travel" },
+                    new Effect("Fast Travel to Windhelm", "fast_travel_windhelm") { Category = "Fast Travel" },
+                    new Effect("Fast Travel to Markarth", "fast_travel_markarth") { Category = "Fast Travel" },
+
+
+                    new Effect("Launch Player", "launch_player"),
+                    new Effect("Switch to First Person", "firstperson"),
+                    new Effect("Switch to Third Person", "thirdperson"),
+                    new Effect("Blood Splatter", "blood"),
+                    new Effect("Vibrate Controller", "vibrate"),
+                    new Effect("Reset Crime and Agression", "resetfactions"),
+                    new Effect("Send Player to Jail", "jail"),
+
+
+                    // Implemented but not working properly
+                    //new Effect("Fast Travel to Dawnstar", "fast_travel_dawnstar") { Category = "Fast Travel" },
+                    //new Effect("Fast Travel to Winterhold", "fast_travel_winterhold") { Category = "Fast Travel" },
+                    //new Effect("Fast Travel to Riften", "fast_travel_riften") { Category = "Fast Travel" },
+                    //new Effect("Fast Travel to Falkreath", "fast_travel_falkreath") { Category = "Fast Travel" },
+                    //new Effect("Fast Travel to High Hrothgar", "fast_travel_high_hrothgar", "fast_travel")
+
+                };
                 #endregion
-
-                #region Take Away Item
-
-                new Effect("Take Away Items", "take_items", ItemKind.Folder),
-                //new Effect("Health Potion", "take_health_potion", "take_items"),
-                //new Effect("Magika Potion", "take_magika_potion", "take_items"),
-                new Effect("Take Lockpick", "take_lockpick", "take_items"),
-                new Effect("Take Arrows", "take_arrows", "take_items"),
-                new Effect("Take Gold (10)", "take_gold_10", "take_items"),
-                new Effect("Take Gold (100)", "take_gold_100", "take_items"),
-                new Effect("Take Gold (1000)", "take_gold_1000", "take_items"),
-
-                #endregion
-
-                #region Spawn Enemy (folder)
-
-                //new Effect("Spawn Angry Chicken", "spawn_angry_chicken", "enemies"),
-
-                new Effect("Spawn Enemy", "enemies", ItemKind.Folder),
-                new Effect("Dragon", "spawn_dragon", "enemies"),
-                //new Effect("Tiny Dragon", "spawn_tinydragon", "enemies"),
-                new Effect("Witch", "spawn_witch", "enemies"),
-                new Effect("Draugr", "spawn_draugr", "enemies"),
-                new Effect("Draugr Overlord", "spawnb_draugr_over", "enemies"),
-                new Effect("Bandit", "spawn_bandit", "enemies"),
-                new Effect("Bandit Party", "spawn_bandits", "enemies"),
-                new Effect("Skeleton", "spawn_skeleton", "enemies"),
-                new Effect("Flame Atronach", "spawnb_flameatronach", "enemies"),
-                new Effect("Frost Atronach", "spawnb_frostatronach", "enemies"),
-                new Effect("Storm Atronach", "spawnb_stormatronach", "enemies"),
-                new Effect("Mammoth", "spawnb_mammoth", "enemies"),
-                new Effect("Giant Spider", "spawnb_giantspider", "enemies"),
-                new Effect("Spriggan", "spawnb_spriggan", "enemies"),
-                new Effect("Mudcrabs", "spawnb_mudcrab", "enemies"),
-                new Effect("Hargraven", "spawnb_hagraven", "enemies"),
-                new Effect("Dwarven Centurion", "spawnb_dwarvencenturion", "enemies"),
-                new Effect("Ice Wraith", "spawnb_ice_wraith", "enemies"),
-                new Effect("Frost Troll", "spawnb_frost_troll", "enemies"),
-
-
-                new Effect("Spawn Animal", "animals", ItemKind.Folder),
-                new Effect("Bear", "spawnb_bear", "animals"),
-                new Effect("Chicken", "spawnb_chicken", "animals"),
-                new Effect("Cow", "spawnb_cow", "animals"),
-                new Effect("Deer", "spawnb_deer", "animals"),
-                new Effect("Dog", "spawnb_dog", "animals"),
-                new Effect("Goat", "spawnb_goat", "animals"),
-                new Effect("Wolf", "spawnb_wolf", "animals"),
-                new Effect("Horse", "spawn_horse", "animals"),
-                #endregion
-
-                new Effect("Clear Bound State", "unbound"),
-
-                new Effect("Spawn NPC", "npcs", ItemKind.Folder),
-                new Effect("Balgruuf the Greater", "spawnb_balgruuf", "npcs"),
-                new Effect("Sheogorath", "spawnb_sheo", "npcs"),
-                new Effect("Cicero", "spawnb_cicero", "npcs"),
-                new Effect("Aela the Huntress", "spawnb_aela", "npcs"),
-                new Effect("Jarl Ulfric Stormcloak", "spawnb_ulfric", "npcs"),
-                new Effect("Serana", "spawnb_serana", "npcs"),
-                new Effect("Mjoll the Lioness", "spawnb_mjoll", "npcs"),
-                new Effect("M'aiq the Liar", "spawnb_maiq", "npcs"),
-                new Effect("Legate Rikke", "spawnb_rikke", "npcs"),
-
-                new Effect("Change Time", "time", ItemKind.Folder),
-                new Effect("Midnight", "time_midnight", "time"),
-                new Effect("Morning", "time_morning", "time"),
-                new Effect("Noon", "time_noon", "time"),
-                new Effect("Evening", "time_evening", "time"),
-
-
-
-                new Effect("Change Weather", "weather", ItemKind.Folder),
-                new Effect("Clear", "weather_clear", "weather"),
-                new Effect("Rain", "weather_storm", "weather"),
-                new Effect("Snow", "weather_snow", "weather"),
-                new Effect("Red", "weather_red", "weather"),
-                new Effect("Green", "weather_green", "weather"),
-                new Effect("Blue", "weather_blue", "weather"),
-
-                new Effect("Change Race", "race", ItemKind.Folder),
-                new Effect("Argonian", "race_argonian", "race"),
-                new Effect("Breton", "race_breton", "race"),
-                new Effect("Dark Elf", "race_darkelf", "race"),
-                new Effect("High Elf", "race_highelf", "race"),
-                new Effect("Imperial", "race_imperial", "race"),
-                new Effect("Khajiit", "race_khajiit", "race"),
-                new Effect("Nord", "race_nord", "race"),
-                new Effect("Orc", "race_orc", "race"),
-                new Effect("Redguard", "race_redguard", "race"),
-                new Effect("Wood Elf", "race_woodelf", "race"),
-
-
-                new Effect("Health and Stamina", "health", ItemKind.Folder),
-                new Effect("Heal Player", "heal", "health"),
-                new Effect("Full Heal", "full_heal", "health"),
-                new Effect("Kill Player", "kill_player", "health"),
-                new Effect("Damage Player", "damage", "health"),
-                new Effect("10% Health", "to_ten_health", "health"),
-                new Effect("Infinite Stamina", "infinite_stamina", "health") { Duration = TimeSpan.FromSeconds(30) },
-                new Effect("Deplete Stamina", "deplete_stamina", "health"),
-
-                new Effect("Buffs and Debuffs", "buffs", ItemKind.Folder),
-                new Effect("Good Random Spell", "good_spell", "buffs"),
-                new Effect("Bad Random Spell", "bad_spell", "buffs"),
-                new Effect("Increase Speed (30 seconds)", "increase_speed", "buffs"),
-                //new Effect("Increase Jump (30 seconds)", "increase_jump", "buffs"),
-                new Effect("Increased Damage (30 seconds)", "increase_damage", "buffs"),
-                new Effect("Disable Crouch", "disable_crouch", "buffs") { Duration = TimeSpan.FromSeconds(60) },
-                new Effect("Destroy/Unlearn Left Hand", "destroy_left", "buffs"),
-                new Effect("Destroy/Unlearn Right Hand", "destroy_right", "buffs"),
-                new Effect("Decrease Speed (30 seconds)", "decrease_speed", "buffs"),
-                //new Effect("Decrease Jump (30 seconds)", "decrease_jump", "buffs"),
-                new Effect("Decrease Damage (30 seconds)", "decrease_damage", "buffs"),
-                new Effect("Disable Fast Travel", "disable_fast_travel", "buffs") { Duration = TimeSpan.FromSeconds(30) },
-                new Effect("Freeze Player", "freeze", "buffs"),
-                //new Effect("Lightning Strike", "lightning", "buffs"),
-                
-
-
-
-                new Effect("Use Scroll", "scrolls", ItemKind.Folder),
-                new Effect("Mayhem", "scroll_mayhem", "scrolls"),
-                new Effect("Hysteria", "scroll_hysteria", "scrolls"),
-                new Effect("Harmony", "scroll_harmony", "scrolls"),
-                new Effect("Water Breathing", "scroll_water", "scrolls"),
-                new Effect("Conjure Flame Atronach", "scroll_cflame", "scrolls"),
-                new Effect("Conjure Frost Atronach", "scroll_cfrost", "scrolls"),
-                new Effect("Conjure Storm Atronach", "scroll_cstorm", "scrolls"),
-                new Effect("Flame Thrall", "scroll_tflame", "scrolls"),
-                new Effect("Frost Thrall", "scroll_tfrost", "scrolls"),
-                new Effect("Storm Thrall", "scroll_tstorm", "scrolls"),
-                new Effect("Blizzard", "scroll_blizzard", "scrolls"),
-                new Effect("Invisibility", "scroll_invis", "scrolls"),
-
-                #region Fast Travel
-
-                new Effect("Fast Travel", "fast_travel", ItemKind.Folder),
-                new Effect("Random Fast Travel", "random_fast_travel", "fast_travel"),
-                new Effect("Fast Travel to Whiterun", "fast_travel_whiterun", "fast_travel"),
-                new Effect("Fast Travel to Riverwood", "fast_travel_riverwood", "fast_travel"),
-                new Effect("Fast Travel to Solitude", "fast_travel_solitude", "fast_travel"),
-                new Effect("Fast Travel to Windhelm", "fast_travel_windhelm", "fast_travel"),
-                new Effect("Fast Travel to Markarth", "fast_travel_markarth", "fast_travel"),
-
-
-                new Effect("Launch Player", "launch_player"),
-                new Effect("Switch to First Person", "firstperson"),
-                new Effect("Switch to Third Person", "thirdperson"),
-                new Effect("Blood Splatter", "blood"),
-                new Effect("Vibrate Controller", "vibrate"),
-                new Effect("Reset Crime and Agression", "resetfactions"),
-                new Effect("Send Player to Jail", "jail"),
-                
-
-                // Implemented but not working properly
-                //new Effect("Fast Travel to Dawnstar", "fast_travel_dawnstar", "fast_travel"),
-                //new Effect("Fast Travel to Winterhold", "fast_travel_winterhold", "fast_travel"),
-                //new Effect("Fast Travel to Riften", "fast_travel_riften", "fast_travel"),
-                //new Effect("Fast Travel to Falkreath", "fast_travel_falkreath", "fast_travel"),
-                //new Effect("Fast Travel to High Hrothgar", "fast_travel_high_hrothgar", "fast_travel")
-
-                #endregion
-            };
+                return effects;
+            }
+        }
 
         /*public override List<(string, Action)> MenuActions
         {
