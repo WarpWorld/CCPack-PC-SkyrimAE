@@ -25,7 +25,7 @@ namespace CrowdControl.Games.Packs
             _win10 = new Windows10(player, _ => true, _ => { });
             Effects.AddRange(_win10.Effects.Where(e => _win10_includes.Contains(e.ID)).Select(e =>
             {
-                e.Parent = "miscellaneous";
+                e.Category = "Miscellaneous";
                 return e;
             }));
         }
