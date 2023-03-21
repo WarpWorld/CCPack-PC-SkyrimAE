@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using CrowdControl.Common;
 using JetBrains.Annotations;
@@ -22,7 +23,7 @@ namespace CrowdControl.Games.Packs
         public SkyrimAE(UserRecord player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
         {
             _win10 = new Windows10(player, _ => true, _ => { });
-            Effects.AddRange(_win10.Effects.Where(e => _win10_includes.Contains(e.Code)).Select(e =>
+            Effects.AddRange(_win10.Effects.Where(e => _win10_includes.Contains(e.ID)).Select(e =>
             {
                 e.Parent = "miscellaneous";
                 return e;
@@ -279,7 +280,7 @@ namespace CrowdControl.Games.Packs
 
         protected override void StartEffect(EffectRequest request)
         {
-            if (_win10.Effects.Any(e => string.Equals(e.Code, request.EffectID, StringComparison.InvariantCultureIgnoreCase)))
+            if (_win10.Effects.Any(e => string.Equals(e.ID, request.EffectID, StringComparison.InvariantCultureIgnoreCase)))
             {
                 _win10_start_effect.Invoke(_win10, new object[] { request });
             }
@@ -288,7 +289,7 @@ namespace CrowdControl.Games.Packs
 
         protected override bool StopEffect(EffectRequest request)
         {
-            if (_win10.Effects.Any(e => string.Equals(e.Code, request.EffectID, StringComparison.InvariantCultureIgnoreCase)))
+            if (_win10.Effects.Any(e => string.Equals(e.ID, request.EffectID, StringComparison.InvariantCultureIgnoreCase)))
             {
                 return (bool)_win10_stop_effect.Invoke(_win10, new object[] { request });
             }
