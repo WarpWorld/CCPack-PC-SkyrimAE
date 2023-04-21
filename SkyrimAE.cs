@@ -20,6 +20,8 @@ namespace CrowdControl.Games.Packs
 
         public override ushort Port => 59420;
 
+        public override ISimpleTCPPack.MessageFormat MessageFormat => ISimpleTCPPack.MessageFormat.CrowdControlLegacy;
+
         public SkyrimAE(UserRecord player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
         {
             _win10 = new Windows10(player, _ => true, _ => { });
