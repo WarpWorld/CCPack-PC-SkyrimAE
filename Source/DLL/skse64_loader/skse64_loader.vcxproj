@@ -96,8 +96,7 @@
       <AdditionalDependencies>version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>copy "$(TargetPath)" "$(Skyrim64Path)\$(TargetFileName)" /Y</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Installing Loader...</Message>

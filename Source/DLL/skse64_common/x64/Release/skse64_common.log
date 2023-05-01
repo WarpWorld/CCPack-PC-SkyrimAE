@@ -1,5 +1,1 @@
-﻿  BranchTrampoline.cpp
-  Relocation.cpp
-  SafeWrite.cpp
-  Utilities.cpp
-  skse64_common.vcxproj -> C:\Users\Natalie\Desktop\Git Code\Packs\CCPack-PC-SkyrimAE-GOG\Source\DLL\x64\Release\skse64_common.lib
+﻿  skse64_common.vcxproj -> C:\Users\Natalie\Desktop\Git Code\Skyrim-Test\skse64\x64\Release\skse64_common.lib

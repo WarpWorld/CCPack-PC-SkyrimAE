@@ -2,13 +2,13 @@
 #include "skse64/NiGeometry.h"
 
 // ??_7BSFaceGenBaseMorphExtraData@@6B@
-RelocAddr<uintptr_t> s_BSFaceGenBaseMorphExtraDataVtbl(0x016F30B0);
+RelocAddr<uintptr_t> s_BSFaceGenBaseMorphExtraDataVtbl(0x016F8090);
 // ??_7NiStringsExtraData@@6B@
-RelocAddr<uintptr_t> s_NiStringsExtraDataVtbl(0x01852F90);
+RelocAddr<uintptr_t> s_NiStringsExtraDataVtbl(0x01857FE0);
 // ??_7NiBinaryExtraData@@6B@
-RelocAddr<uintptr_t> s_NiBinaryExtraDataVtbl(0x01857878);
+RelocAddr<uintptr_t> s_NiBinaryExtraDataVtbl(0x0185C8C8);
 // ??_7NiBooleanExtraData@@6B@
-RelocAddr<uintptr_t> s_NiBooleanExtraDataVtbl(0x01857A30);
+RelocAddr<uintptr_t> s_NiBooleanExtraDataVtbl(0x0185CA80);
 
 NiExtraData* NiExtraData::Create(UInt32 size, uintptr_t vtbl)
 {
