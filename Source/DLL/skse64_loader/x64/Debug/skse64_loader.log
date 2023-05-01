@@ -1,0 +1,4 @@
+﻿  main.cpp
+  Options.cpp
+  Generating Code...
+LINK : fatal error LNK1104: cannot open file 'C:\Users\Natalie\Desktop\Git Code\Packs\CCPack-PC-SkyrimAE-GOG\Source\DLL\x64_v142\Debug_VC142\common_vc14.lib'
