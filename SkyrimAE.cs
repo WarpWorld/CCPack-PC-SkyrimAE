@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using CrowdControl.Common;
 using JetBrains.Annotations;
 
@@ -11,10 +9,10 @@ namespace CrowdControl.Games.Packs;
 [UsedImplicitly]
 public class SkyrimAE : SimpleTCPPack
 {
-    private readonly Windows10 _win10;
-    private readonly MethodInfo _win10_start_effect = typeof(Windows10).GetMethod("StartEffect", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(EffectRequest) }, null);
-    private readonly MethodInfo _win10_stop_effect = typeof(Windows10).GetMethod("StopEffect", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(EffectRequest) }, null);
-    private readonly HashSet<string> _win10_includes = new(new[] { "invdisplay", "invmouse", "sendleftclick", "sendrightclick", "randmouse", "mousebuttonswap" }, StringComparer.InvariantCultureIgnoreCase);
+    //private readonly Windows10 _win10;
+    //private readonly MethodInfo _win10_start_effect = typeof(Windows10).GetMethod("StartEffect", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(EffectRequest) }, null);
+    //private readonly MethodInfo _win10_stop_effect = typeof(Windows10).GetMethod("StopEffect", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(EffectRequest) }, null);
+    //private readonly HashSet<string> _win10_includes = new(new[] { "invdisplay", "invmouse", "sendleftclick", "sendrightclick", "randmouse", "mousebuttonswap" }, StringComparer.InvariantCultureIgnoreCase);
 
     public override string Host => "127.0.0.1";
 
@@ -24,12 +22,12 @@ public class SkyrimAE : SimpleTCPPack
 
     public SkyrimAE(UserRecord player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
     {
-        _win10 = new Windows10(player, _ => true, _ => { });
+        /*_win10 = new Windows10(player, _ => true, _ => { });
         Effects.AddRange(_win10.Effects.Where(e => _win10_includes.Contains(e.ID)).Select(e =>
         {
             e.Category = "Miscellaneous";
             return e;
-        }));
+        }));*/
     }
 
     public override Game Game { get; } = new(123, "The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
@@ -69,7 +67,6 @@ public class SkyrimAE : SimpleTCPPack
                 new("Give Exploding Spider Scroll", "give_spider") { Category = "Give Items" },
                 new("Give Dwemer's Curse", "dwemercurse") { Category = "Give Items" },
                 new("Give Cheese-splosion", "cheeserain") { Category = "Give Items" },
-
 
                 new("One Handed Up", "onehanded_up") { Category = "Skills" },
                 new("One Handed Down", "onehanded_down") { Category = "Skills" },
@@ -169,12 +166,10 @@ public class SkyrimAE : SimpleTCPPack
                 new("Spawn M'aiq the Liar", "spawnb_maiq") { Category = "NPCs" },
                 new("Spawn Legate Rikke", "spawnb_rikke") { Category = "NPCs" },
 
-
                 new("Set Time to Midnight", "time_midnight") { Category = "Time" },
                 new("Set Time to Morning", "time_morning") { Category = "Time" },
                 new("Set Time to Noon", "time_noon") { Category = "Time" },
                 new("Set Time to Evening", "time_evening") { Category = "Time" },
-
 
                 new("Set Weather to Clear", "weather_clear") { Category = "Weather" },
                 new("Set Weather to Rain", "weather_storm") { Category = "Weather" },
@@ -193,7 +188,6 @@ public class SkyrimAE : SimpleTCPPack
                 new("Change Race to Orc", "race_orc") { Category = "Race" },
                 new("Change Race to Redguard", "race_redguard") { Category = "Race" },
                 new("Change Race to Wood Elf", "race_woodelf") { Category = "Race" },
-
 
                 new("Heal Player", "heal") { Category = "Health and Stamina" },
                 new("Full Heal", "full_heal") { Category = "Health and Stamina" },
@@ -217,8 +211,6 @@ public class SkyrimAE : SimpleTCPPack
                 new("Disable Fast Travel", "disable_fast_travel") { Category = "Buffs and Debuffs", Duration = TimeSpan.FromSeconds(30) },
                 new("Freeze Player", "freeze") { Category = "Buffs and Debuffs" },
                 //new Effect("Lightning Strike", "lightning") { Category = "Buffs and Debuffs" },
-
-
 
                 new("Use Scroll - Mayhem", "scroll_mayhem") { Category = "Scrolls" },
                 new("Use Scroll - Hysteria", "scroll_hysteria") { Category = "Scrolls" },
@@ -280,7 +272,7 @@ public class SkyrimAE : SimpleTCPPack
         }
     }*/
 
-    protected override void StartEffect(EffectRequest request)
+    /*protected override void StartEffect(EffectRequest request)
     {
         if (_win10.Effects.Any(e => string.Equals(e.ID, request.EffectID, StringComparison.InvariantCultureIgnoreCase)))
         {
@@ -296,5 +288,5 @@ public class SkyrimAE : SimpleTCPPack
             return (bool)_win10_stop_effect.Invoke(_win10, new object[] { request });
         }
         return base.StopEffect(request);
-    }
+    }*/
 }
