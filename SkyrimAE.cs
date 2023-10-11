@@ -4,7 +4,7 @@ using CrowdControl.Common;
 using JetBrains.Annotations;
 
 //ccpragma { "include" : [ "..\\Windows10\\Windows10.cs" ] }
-namespace CrowdControl.Games.Packs;
+namespace CrowdControl.Games.Packs.SkyrimAE;
 
 [UsedImplicitly]
 public class SkyrimAE : SimpleTCPPack
