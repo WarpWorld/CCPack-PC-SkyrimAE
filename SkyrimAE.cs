@@ -30,7 +30,7 @@ public class SkyrimAE : SimpleTCPPack
         }));*/
     }
 
-    public override Game Game { get; } = new(123, "The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
+    public override Game Game { get; } = new("The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
 
     public override EffectList Effects
     {
@@ -194,21 +194,21 @@ public class SkyrimAE : SimpleTCPPack
                 new("Kill Player", "kill_player") { Category = "Health and Stamina" },
                 new("Damage Player", "damage") { Category = "Health and Stamina" },
                 new("10% Health", "to_ten_health") { Category = "Health and Stamina" },
-                new("Infinite Stamina", "infinite_stamina") { Category = "Health and Stamina", Duration = TimeSpan.FromSeconds(30) },
+                new("Infinite Stamina", "infinite_stamina") { Category = "Health and Stamina", Duration = 30 },
                 new("Deplete Stamina", "deplete_stamina") { Category = "Health and Stamina" },
 
                 new("Good Random Spell", "good_spell") { Category = "Buffs and Debuffs" },
                 new("Bad Random Spell", "bad_spell") { Category = "Buffs and Debuffs" },
-                new("Increase Speed (30 seconds)", "increase_speed") { Category = "Buffs and Debuffs" },
-                //new Effect("Increase Jump (30 seconds)", "increase_jump") { Category = "Buffs and Debuffs" },
-                new("Increased Damage (30 seconds)", "increase_damage") { Category = "Buffs and Debuffs" },
-                new("Disable Crouch", "disable_crouch") { Category = "Buffs and Debuffs", Duration = TimeSpan.FromSeconds(60) },
+                new("Increase Speed", "increase_speed") { Category = "Buffs and Debuffs", Duration = 30 },
+                //new Effect("Increase Jump", "increase_jump") { Category = "Buffs and Debuffs", Duration = 30  },
+                new("Increased Damage", "increase_damage") { Category = "Buffs and Debuffs", Duration = 30  },
+                new("Disable Crouch", "disable_crouch") { Category = "Buffs and Debuffs", Duration = 60 },
                 new("Destroy/Unlearn Left Hand", "destroy_left") { Category = "Buffs and Debuffs" },
                 new("Destroy/Unlearn Right Hand", "destroy_right") { Category = "Buffs and Debuffs" },
-                new("Decrease Speed (30 seconds)", "decrease_speed") { Category = "Buffs and Debuffs" },
-                //new Effect("Decrease Jump (30 seconds)", "decrease_jump") { Category = "Buffs and Debuffs" },
-                new("Decrease Damage (30 seconds)", "decrease_damage") { Category = "Buffs and Debuffs" },
-                new("Disable Fast Travel", "disable_fast_travel") { Category = "Buffs and Debuffs", Duration = TimeSpan.FromSeconds(30) },
+                new("Decrease Speed", "decrease_speed") { Category = "Buffs and Debuffs", Duration = 30  },
+                //new Effect("Decrease Jump", "decrease_jump") { Category = "Buffs and Debuffs", Duration = 30  },
+                new("Decrease Damage", "decrease_damage") { Category = "Buffs and Debuffs", Duration = 30  },
+                new("Disable Fast Travel", "disable_fast_travel") { Category = "Buffs and Debuffs", Duration = 30 },
                 new("Freeze Player", "freeze") { Category = "Buffs and Debuffs" },
                 //new Effect("Lightning Strike", "lightning") { Category = "Buffs and Debuffs" },
 
