@@ -1,0 +1,9 @@
+﻿  main.cpp
+  Options.cpp
+  Generating Code...
+  skse64_loader.vcxproj -> C:\Users\Natalie\Desktop\Git Code\Packs\CCPack-PC-SkyrimAE\Source\DLL\x64\Debug\skse64_loader.exe
+  Installing Loader...
+  Access is denied.
+          0 file(s) copied.
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(155,5): error MSB3073: The command "copy "C:\Users\Natalie\Desktop\Git Code\Packs\CCPack-PC-SkyrimAE\Source\DLL\x64\Debug\skse64_loader.exe" "\skse64_loader.exe" /Y
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(155,5): error MSB3073: :VCEnd" exited with code 1.

@@ -79,12 +79,12 @@ public:
 	//void LockForRead();
 	//void LockForWrite();
 	MEMBER_FN_PREFIX(BSReadWriteLock);
-	DEFINE_MEMBER_FN(LockForRead, void, 0x00C3E930);
-	DEFINE_MEMBER_FN(LockForWrite, void, 0x00C3E9B0);
-	DEFINE_MEMBER_FN(UnlockRead, void, 0x00C3EBF0);
-	DEFINE_MEMBER_FN(UnlockWrite, void, 0x00C3EC00);
-	DEFINE_MEMBER_FN(LockForReadAndWrite, void, 0x00C3EAB0);
-	DEFINE_MEMBER_FN(TryLockForWrite, bool, 0x00C3EBA0);
+	DEFINE_MEMBER_FN(LockForRead, void, 0x00CC4490);
+	DEFINE_MEMBER_FN(LockForWrite, void, 0x00CC4510);
+	DEFINE_MEMBER_FN(UnlockRead, void, 0x00CC4750);
+	DEFINE_MEMBER_FN(UnlockWrite, void, 0x00CC4760);
+	DEFINE_MEMBER_FN(LockForReadAndWrite, void, 0x00CC4610);
+	DEFINE_MEMBER_FN(TryLockForWrite, bool, 0x00CC4700);
 };
 STATIC_ASSERT(sizeof(BSReadWriteLock) == 0x8);
 
@@ -127,14 +127,14 @@ public:
 		const char	* data;
 
 		MEMBER_FN_PREFIX(Ref);
-		DEFINE_MEMBER_FN(ctor, Ref *, 0x00C61360, const char * buf);
+		DEFINE_MEMBER_FN(ctor, Ref *, 0x00CE7D90, const char * buf);
 		// 31D79EFB15D5E4B34BD32D03A46EAFF65C28ACFB+CB
-		DEFINE_MEMBER_FN(ctor_ref, Ref *, 0x00C61410, const Ref & rhs);
-		DEFINE_MEMBER_FN(Set, Ref *, 0x00C614F0, const char * buf);
+		DEFINE_MEMBER_FN(ctor_ref, Ref *, 0x00CE7E40, const Ref & rhs);
+		DEFINE_MEMBER_FN(Set, Ref *, 0x00CE7F20, const char * buf);
 		// 31D79EFB15D5E4B34BD32D03A46EAFF65C28ACFB+41
-		DEFINE_MEMBER_FN(Set_ref, Ref *, 0x00C615B0, const Ref & rhs);
+		DEFINE_MEMBER_FN(Set_ref, Ref *, 0x00CE7FE0, const Ref & rhs);
 		// 46F6DC561A3C9677037E58B55951C58A08E41C47+4A
-		DEFINE_MEMBER_FN(Release, void, 0x00C62730);
+		DEFINE_MEMBER_FN(Release, void, 0x00CE9160);
 
 		Ref();
 		Ref(const char * buf);
@@ -186,7 +186,7 @@ public:
 	const char *	Get(void) const;
 
 	MEMBER_FN_PREFIX(BSString);
-	DEFINE_MEMBER_FN(Set, bool, 0x001058A0, const char * str, UInt32 len);	// len default 0
+	DEFINE_MEMBER_FN(Set, bool, 0x0010ABA0, const char * str, UInt32 len);	// len default 0
 
 private:
 	char	* m_data;	// 00
@@ -277,7 +277,7 @@ public:
 		Heap_Free(entries);																// Free the old block
 		entries = newBlock;																// Assign the new block
 		capacity = numEntries;															// Capacity is now the number of total entries in the block
-		count = min(capacity, count);													// Count stays the same, or is truncated to capacity
+		count = (std::min)(capacity, count);													// Count stays the same, or is truncated to capacity
 		return true;
 	}
 
@@ -792,11 +792,6 @@ public:
 		return curIt;
 	}
 
-	const _Node* FindString(char* str, Iterator prev) const
-	{
-		return Find(StringFinder_CI(str), prev);
-	}
-
 	template <class Op>
 	UInt32 CountIf(Op& op) const
 	{
@@ -825,7 +820,7 @@ public:
 
 	T * RemoveNth(SInt32 n) 
 	{
-		Item* pRemoved = NULL;
+		T* pRemoved = NULL;
 		if (n == 0) {
 			pRemoved =  m_listHead.RemoveMe();
 		} else if (n > 0) {
@@ -839,7 +834,7 @@ public:
 
 	T * ReplaceNth(SInt32 n, T* item) 
 	{
-		Item* pReplaced = NULL;
+		T* pReplaced = NULL;
 		NodePos nodePos = GetNthNode(n);
 		if (nodePos.node && nodePos.index == n) {
 			pReplaced = nodePos.node->item;

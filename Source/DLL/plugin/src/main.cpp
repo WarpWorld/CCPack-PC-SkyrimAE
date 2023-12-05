@@ -194,6 +194,7 @@ bool RegisterFuncs(VMClassRegistry* a_registry)
 	a_registry->RegisterFunction(new NativeFunction0<StaticFunctionTag, void>("CC_ClearTimers", "CrowdControl", CrowdControlClearTimers, a_registry));
 	a_registry->RegisterFunction(new NativeFunction2<StaticFunctionTag, SInt32, BSFixedString, BSFixedString>("CC_GetIntSetting", "CrowdControl", GetIntSetting, a_registry));
 	a_registry->RegisterFunction(new NativeFunction2<StaticFunctionTag, float, BSFixedString, BSFixedString>("CC_GetFloatSetting", "CrowdControl", GetFloatSetting, a_registry));
+
 	return true;
 }
 
@@ -212,7 +213,7 @@ extern "C" {
 		0,    // not version independent
 		0,
 		
-		{ RUNTIME_VERSION_1_6_640, 0 },    // compatible with 1.6.342
+		{ RUNTIME_VERSION_1_6_1130, 0 },    // compatible with 1.6.1130
 
 		0,    // works with any version of the script extender. you probably do not need to put anything here
 	};
@@ -255,14 +256,14 @@ extern "C" {
 
 			papyrus->Register(RegisterFuncs);
 
-			if (!connector->Connect(CC_PORT))
+			/*if (!connector->Connect(CC_PORT))
 			{
 				_ERROR(connector->GetError());
 			}
 			else
 			{
 				_MESSAGE("Crowd Control Connected");
-			}
+			}*/
 
 			auto* messaging = (SKSEMessagingInterface*)a_skse->QueryInterface(kInterface_Messaging);
 
