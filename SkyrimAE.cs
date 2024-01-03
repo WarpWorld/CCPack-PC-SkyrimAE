@@ -3,17 +3,11 @@ using System.Collections.Generic;
 using CrowdControl.Common;
 using JetBrains.Annotations;
 
-//ccpragma { "include" : [ "..\\Windows10\\Windows10.cs" ] }
 namespace CrowdControl.Games.Packs.SkyrimAE;
 
 [UsedImplicitly]
 public class SkyrimAE : SimpleTCPPack
 {
-    //private readonly Windows10 _win10;
-    //private readonly MethodInfo _win10_start_effect = typeof(Windows10).GetMethod("StartEffect", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(EffectRequest) }, null);
-    //private readonly MethodInfo _win10_stop_effect = typeof(Windows10).GetMethod("StopEffect", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(EffectRequest) }, null);
-    //private readonly HashSet<string> _win10_includes = new(new[] { "invdisplay", "invmouse", "sendleftclick", "sendrightclick", "randmouse", "mousebuttonswap" }, StringComparer.InvariantCultureIgnoreCase);
-
     public override string Host => "127.0.0.1";
 
     public override ushort Port => 59420;
@@ -256,37 +250,4 @@ public class SkyrimAE : SimpleTCPPack
             return effects;
         }
     }
-
-    /*public override List<(string, Action)> MenuActions
-    {
-        get
-        {
-            List<(string, Action)> result = new List<(string, Action)>
-            {
-                ("Clear Bound State", () =>
-                {
-                    //EffectRequest request = new EffectRequest()
-                })
-            };
-            return result;
-        }
-    }*/
-
-    /*protected override void StartEffect(EffectRequest request)
-    {
-        if (_win10.Effects.Any(e => string.Equals(e.ID, request.EffectID, StringComparison.InvariantCultureIgnoreCase)))
-        {
-            _win10_start_effect.Invoke(_win10, new object[] { request });
-        }
-        else { base.StartEffect(request); }
-    }
-
-    protected override bool StopEffect(EffectRequest request)
-    {
-        if (_win10.Effects.Any(e => string.Equals(e.ID, request.EffectID, StringComparison.InvariantCultureIgnoreCase)))
-        {
-            return (bool)_win10_stop_effect.Invoke(_win10, new object[] { request });
-        }
-        return base.StopEffect(request);
-    }*/
 }
