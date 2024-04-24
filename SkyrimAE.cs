@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using CrowdControl.Common;
+﻿using CrowdControl.Common;
 using JetBrains.Annotations;
 
 namespace CrowdControl.Games.Packs.SkyrimAE;
