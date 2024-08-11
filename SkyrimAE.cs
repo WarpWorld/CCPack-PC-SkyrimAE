@@ -22,6 +22,8 @@ public class SkyrimAE : SimpleTCPPack
         }));*/
     }
 
+    public override bool StopAllEffects() => true;
+
     public override Game Game { get; } = new("The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
 
     public override EffectList Effects
