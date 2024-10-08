@@ -1,10 +1,11 @@
-﻿using CrowdControl.Common;
+﻿using ConnectorLib.SimpleTCP;
+using CrowdControl.Common;
 using JetBrains.Annotations;
 
 namespace CrowdControl.Games.Packs.SkyrimAE;
 
 [UsedImplicitly]
-public class SkyrimAE : SimpleTCPPack
+public class SkyrimAE : SimpleTCPPack<SimpleTCPServerConnector>
 {
     public override string Host => "127.0.0.1";
 
@@ -24,7 +25,7 @@ public class SkyrimAE : SimpleTCPPack
 
     public override bool StopAllEffects() => true;
 
-    public override Game Game { get; } = new("The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPConnector);
+    public override Game Game { get; } = new("The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPServerConnector);
 
     public override EffectList Effects
     {
