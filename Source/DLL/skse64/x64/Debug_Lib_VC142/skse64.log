@@ -1,6 +1,0 @@
-﻿  skse64.vcxproj -> C:\Users\Natalie\Desktop\Git Code\Packs\CCPack-PC-SkyrimAE\Source\DLL\x64\Debug_Lib_VC142\skse64_1_6_323.lib
-  Installing DLL...
-  Access is denied.
-          0 file(s) copied.
-C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(155,5): error MSB3073: The command "copy "C:\Users\Natalie\Desktop\Git Code\Packs\CCPack-PC-SkyrimAE\Source\DLL\x64\Debug_Lib_VC142\skse64_1_6_323.lib" "\skse64_1_6_323.lib" /Y
-C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(155,5): error MSB3073: :VCEnd" exited with code 1.
