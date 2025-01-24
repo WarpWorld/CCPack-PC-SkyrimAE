@@ -159,10 +159,19 @@ Event OnUpdate()
 
     if lastState == ""
         Utility.Wait(2)
-        Debug.Notification("Crowd Control v" + CC_Version())
+
+        string version = CC_Version()
+
+        if version == ""
+            Debug.Notification("Could not connect to Crowd Control")
+            Utility.Wait(2)
+            return
+        else
+            Debug.Notification("Crowd Control v" + version)
+        endif
     endif
 
-    if newState != lastState
+    if newState != lastState and newState != ""
         Debug.Notification("Crowd Control is " + newState)
         lastState = newState
     endif
@@ -202,6 +211,16 @@ Function RunCommands()
 
         if !IntroQuest.IsCompleted() && IntroQuest.GetStage() <= 250
             Respond(commandId, 1, "Crowd Control stopped while player is bound")
+            return
+        endif
+
+        if Game.EnablePlayerControls(false, true, false, false, false, false, false)
+            Respond(commandId, 1, "Crowd Control stopped while player is bound")
+            return
+        endif
+
+        if !VampireQuest.IsCompleted() && VampireQuest.GetStage() < 250 && VampireQuest.GetStage() >= 100
+            Respond(commandId, 1, "Crowd Control stopped during Diplomatic Immunity")
             return
         endif
 
@@ -673,25 +692,40 @@ Function ProcessCommand(int id, String command, String viewer, int type)
                         ref = self.PlaceAtMe(spawn)
             endif
             if spawnName == "chickenstorm"
-                ref.AddToFaction(BanditFaction)
-                        ref = self.PlaceAtMe(spawn)
-                ref.AddToFaction(BanditFaction)
-                        ref = self.PlaceAtMe(spawn)
-                ref.AddToFaction(BanditFaction)
-                        ref = self.PlaceAtMe(spawn)
-                ref.AddToFaction(BanditFaction)
-                        ref = self.PlaceAtMe(spawn)
-                ref.AddToFaction(BanditFaction)
-                        ref = self.PlaceAtMe(spawn)
-                ref.AddToFaction(BanditFaction)
-                        ref = self.PlaceAtMe(spawn)
-                ref.AddToFaction(BanditFaction)
-                        ref = self.PlaceAtMe(spawn)
-                ref.AddToFaction(BanditFaction)
-                        ref = self.PlaceAtMe(spawn)
-                ref.AddToFaction(BanditFaction)
-                        ref = self.PlaceAtMe(spawn)
-                ref.AddToFaction(BanditFaction)
+
+                Actor aref
+                aref = ref as Actor
+                aref.AddToFaction(BanditFaction)
+
+                ref = self.PlaceAtMe(spawn)
+                aref = ref as Actor
+                aref.AddToFaction(BanditFaction)
+                ref = self.PlaceAtMe(spawn)
+                aref = ref as Actor
+                aref.AddToFaction(BanditFaction)
+                ref = self.PlaceAtMe(spawn)
+                aref = ref as Actor
+                aref.AddToFaction(BanditFaction)
+                ref = self.PlaceAtMe(spawn)
+                aref = ref as Actor
+                aref.AddToFaction(BanditFaction)
+                ref = self.PlaceAtMe(spawn)
+                aref = ref as Actor
+                aref.AddToFaction(BanditFaction)
+                ref = self.PlaceAtMe(spawn)
+                aref = ref as Actor
+                aref.AddToFaction(BanditFaction)
+                ref = self.PlaceAtMe(spawn)
+                aref = ref as Actor
+                aref.AddToFaction(BanditFaction)
+                ref = self.PlaceAtMe(spawn)
+                aref = ref as Actor
+                aref.AddToFaction(BanditFaction)
+                ref = self.PlaceAtMe(spawn)
+                aref = ref as Actor
+                aref.AddToFaction(BanditFaction)
+                
+
             endif
         
                     Respond(id, 0, viewer + " spawned a " + spawnName)
@@ -974,3 +1008,5 @@ ActorBase Property GoatRef  Auto
 ActorBase Property WolfRef  Auto  
 ActorBase Property BearRef  Auto  
 Faction Property BanditFaction  Auto  
+
+Quest Property VampireQuest  Auto  
