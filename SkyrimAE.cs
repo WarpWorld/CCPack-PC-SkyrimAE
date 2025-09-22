@@ -12,7 +12,7 @@ public class SkyrimAE : SimpleTCPPack<SimpleTCPServerConnector>
 
     public override ushort Port => 59420;
 
-    [SuppressMessage("PackMetadata", "CC1008:Message Format Property")]
+    [SuppressMessage("CrowdControl.PackMetadata", "CC1009:Message Format Property")]
     public override ISimpleTCPPack.MessageFormatType MessageFormat => ISimpleTCPPack.MessageFormatType.CrowdControlLegacy;
 
     public SkyrimAE(UserRecord player, Func<CrowdControlBlock, bool> responseHandler, Action<object> statusUpdateHandler) : base(player, responseHandler, statusUpdateHandler)
