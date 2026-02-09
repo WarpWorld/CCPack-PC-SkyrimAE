@@ -18,6 +18,7 @@ How to Install:
 Options to modify:
 
 	Moving CrowdControl.ini to "Documents\My Games\Skyrim Special Edition" will allow you to modify the ini with desired settings
+	- launchPower: launch strength for the Launch Player effect (default 20)
 
 WARNING:
 	

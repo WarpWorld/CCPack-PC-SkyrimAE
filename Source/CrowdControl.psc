@@ -928,9 +928,13 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		PoliceFaction.SendPlayerToJail(true, true)
 		self.Respond(id, 0, viewer + " sent you to jail", 0)
 	elseIf command == "launch_player"
+		Float launchPower = CrowdControl.CC_GetFloatSetting("General", "launchPower")
+		if launchPower <= 0 as Float
+			launchPower = 20 as Float
+		endIf
 		player.PlaceAtMe(launchMarker as form, 1, false, false)
 		launchMarker.MoveTo(player as ObjectReference, 0 as Float, 0 as Float, player.GetPositionZ() - 50 as Float, true)
-		launchMarker.PushActorAway(player, 20 as Float)
+		launchMarker.PushActorAway(player, launchPower)
 		self.Respond(id, 0, viewer + " launched you", 0)
 	elseIf command == "give_dragonbone"
 		miscobject target = ItemList[0]
