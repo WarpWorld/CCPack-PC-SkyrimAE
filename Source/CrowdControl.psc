@@ -567,7 +567,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			self.Respond(id, 1, "Not enough gold", 0)
 		endIf
 	elseIf command == "full_heal"
-		Float heal = player.GetActorValueMax("health") - player.GetAV("health")
+		Float heal = player.GetAVMax("health") - player.GetAV("health")
 		if heal > 0 as Float
 			player.RestoreAV("health", heal)
 			self.Respond(id, 0, viewer + " fully healed you", 0)
@@ -575,7 +575,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			self.Respond(id, 1, "Health at full", 0)
 		endIf
 	elseIf command == "to_ten_health"
-		Float damage = player.GetAV("health") - player.GetActorValueMax("health") * 0.100000
+		Float damage = player.GetAV("health") - player.GetAVMax("health") * 0.100000
 		if damage > 0 as Float
 			player.DamageAV("health", damage)
 			self.Respond(id, 0, viewer + " sets your health to 10%", 0)
@@ -583,8 +583,8 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			self.Respond(id, 1, "", 0)
 		endIf
 	elseIf command == "heal"
-		Float miss = player.GetActorValueMax("health") - player.GetAV("health")
-		Float heal = player.GetActorValueMax("health") * 0.100000
+		Float miss = player.GetAVMax("health") - player.GetAV("health")
+		Float heal = player.GetAVMax("health") * 0.100000
 		if miss > 0 as Float
 			player.RestoreAV("health", heal)
 			self.Respond(id, 0, viewer + " healed you", 0)
@@ -592,7 +592,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			self.Respond(id, 1, "Health at full", 0)
 		endIf
 	elseIf command == "damage"
-		Float damage = player.GetActorValueMax("health") * 0.100000
+		Float damage = player.GetAVMax("health") * 0.100000
 		player.DamageAV("health", damage)
 		self.Respond(id, 0, viewer + " damaged you", 0)
 	elseIf command == "kill_player"
@@ -769,7 +769,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		else
 			staminaInfinite = false
 			player.ModAV("stamina", -10000 as Float)
-			player.RestoreAV("stamina", player.GetActorValueMax("stamina"))
+			player.RestoreAV("stamina", player.GetAVMax("stamina"))
 			self.Respond(id, 0, "Stamina no longer infinite", 0)
 		endIf
 	elseIf command == "deplete_stamina"
@@ -928,9 +928,17 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		PoliceFaction.SendPlayerToJail(true, true)
 		self.Respond(id, 0, viewer + " sent you to jail", 0)
 	elseIf command == "launch_player"
+
+		Debug.Notification("Testing Launch Effect")
+
+		Float launchPower = CrowdControl.CC_GetFloatSetting("General", "launchPower")
+		if launchPower <= 0 as Float
+			launchPower = 20 as Float
+		endIf
 		player.PlaceAtMe(launchMarker as form, 1, false, false)
+		launchMarker.MoveTo(player as ObjectReference, 0, 0, 10 as Float, true)
 		launchMarker.MoveTo(player as ObjectReference, 0, 0, -50 as Float, true)
-		launchMarker.PushActorAway(player, 20)
+		launchMarker.PushActorAway(player, launchPower)
 		self.Respond(id, 0, viewer + " launched you", 0)
 	elseIf command == "give_dragonbone"
 		miscobject target = ItemList[0]
@@ -962,12 +970,12 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		self.Respond(id, 0, viewer + " gave you an steel ingot", 0)
 	elseIf command == "launch_player_2"
 		player.PlaceAtMe(launchMarker as form, 1, false, false)
-		launchMarker.MoveTo(player as ObjectReference, 0, 0, -50 as Float, true)
+		launchMarker.MoveTo(player as ObjectReference, 0 as Float, 0 as Float, -50 as Float, true)
 		launchMarker.PushActorAway(player, 50 as Float)
 		self.Respond(id, 0, viewer + " launched you", 0)
 	elseIf command == "launch_player_3"
 		player.PlaceAtMe(launchMarker as form, 1, false, false)
-		launchMarker.MoveTo(player as ObjectReference, 0, 0, -50 as Float, true)
+		launchMarker.MoveTo(player as ObjectReference, 0 as Float, 0 as Float, -50 as Float, true)
 		launchMarker.PushActorAway(player, 100 as Float)
 		self.Respond(id, 0, viewer + " launched you", 0)
 	elseIf command == "disable_fast_travel"
@@ -1125,7 +1133,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 	endIf
 endFunction
 
-Event OnUpdate()
+function OnUpdate()
 
     
 	String newState = CrowdControl.CC_GetState()
@@ -1160,7 +1168,7 @@ Event OnUpdate()
 	else
 		CrowdControl.CC_Reconnect()
 	endIf
-EndEvent
+endFunction
 
 function CastRandomSpell(Int id, String viewer, Bool good)
 
@@ -1264,12 +1272,12 @@ endFunction
 
 ; Skipped compiler generated GetState
 
-Event OnInit()
+function OnInit()
     lastState = ""
 	lastCommandId = -1
 	lastCommandType = -1
 	self.RegisterForUpdate(0.500000)
-EndEvent
+endFunction
 
 actorbase function GetSpawnRefB(String spawn_name)
 
