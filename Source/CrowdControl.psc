@@ -1195,11 +1195,42 @@ function InitRandomSpellLists()
 	randomSpellsInitialized = true
 endFunction
 
+spell function TryPickInactiveSpell(spell[] spellList, Actor akActor)
+
+	Int tries = 0
+	Int listLen = spellList.length
+	while tries < listLen
+		spell candidate = spellList[utility.RandomInt(0, listLen - 1)]
+		if candidate != none && !self.IsSpellCurrentlyActive(akActor, candidate)
+			return candidate
+		endIf
+		tries += 1
+	endWhile
+	return none
+endFunction
+
+Bool function IsSpellCurrentlyActive(Actor akActor, Spell akSpell)
+
+	Int i = 0
+	Int effectCount = akSpell.GetNumEffects()
+	while i < effectCount
+		MagicEffect mgef = akSpell.GetNthEffectMagicEffect(i)
+		if mgef != none && akActor.HasMagicEffect(mgef)
+			return true
+		endIf
+		i += 1
+	endWhile
+	return false
+endFunction
+
 function CastRandomSpell(Int id, String viewer, Bool good)
 
 	if !good && CrowdControl.CC_HasTimer("bad_spell") as Bool
 		self.Respond(id, 3, "", 0)
 		return 
+	endIf
+	if player == none
+		player = game.GetPlayer()
 	endIf
 	self.InitRandomSpellLists()
 	spell[] spellList
@@ -1208,11 +1239,25 @@ function CastRandomSpell(Int id, String viewer, Bool good)
 	else
 		spellList = BadSpells
 	endIf
-	Int spellIndex = utility.RandomInt(0, spellList.length - 1)
-	spell selectedSpell = spellList[spellIndex]
+	spell selectedSpell = self.TryPickInactiveSpell(spellList, player)
 	if selectedSpell == none
-		self.Respond(id, 1, "", 0)
-		return 
+		spell fallback = spellList[utility.RandomInt(0, spellList.length - 1)]
+		if fallback == none
+			self.Respond(id, 1, "", 0)
+			return 
+		endIf
+		if self.IsSpellCurrentlyActive(player, fallback)
+			String activeName = fallback.GetName()
+			if stringutil.Substring(activeName, stringutil.GetLength(activeName) - 4, 0) == "self"
+				activeName = stringutil.Substring(activeName, 0, stringutil.GetLength(activeName) - 4)
+			endIf
+			self.Respond(id, 1, viewer + " tried to cast " + activeName + " but it's already active", 0)
+			return 
+		endIf
+		selectedSpell = fallback
+	endIf
+	if !player.HasSpell(selectedSpell)
+		player.AddSpell(selectedSpell, false)
 	endIf
 	String spellName = selectedSpell.GetName()
 	if stringutil.Substring(spellName, stringutil.GetLength(spellName) - 4, 0) == "self"
@@ -1222,8 +1267,9 @@ function CastRandomSpell(Int id, String viewer, Bool good)
 	if !good
 		status = 4
 	endIf
+	ObjectReference akTarget = player as ObjectReference
+	selectedSpell.Cast(akTarget, akTarget)
 	self.Respond(id, status, viewer + " casted " + spellName + " on player", 3000)
-	selectedSpell.Cast(self as ObjectReference, self as ObjectReference)
 endFunction
 
 function PrintMessage(String _message)
@@ -1235,40 +1281,49 @@ endFunction
 
 function RunCommands()
 
+	if player == none
+		player = game.GetPlayer()
+	endIf
 	if player.IsDead()
 		return 
 	endIf
-	Int item_count = CrowdControl.CC_GetItemCount()
-	if item_count > 0
+	Int processed = 0
+	while processed < 10
 		String[] item = CrowdControl.CC_PopItem()
-		Int commandId = item[0] as Int
-		Int commandType = item[3] as Int
-		if !IntroQuest.IsCompleted() && IntroQuest.GetStage() <= 250 && item[1] != "unbound"
-			self.Respond(commandId, 1, "Crowd Control stopped while player is bound", 0)
+		if item.length < 4
 			return 
 		endIf
-	    if Game.EnablePlayerControls(false, true, false, false, false, false, false)
-            Respond(commandId, 1, "Crowd Control stopped while player is bound", 0)
-            return
-        endif
-        if !VampireQuest.IsCompleted() && VampireQuest.GetStage() < 250 && VampireQuest.GetStage() >= 100
-            Respond(commandId, 1, "Crowd Control stopped during Diplomatic Immunity", 0)
-            return
-        endif	
-		if lastCommandId == commandId && lastCommandType == commandType
-			if commandType == 1
-				self.Respond(commandId, 1, item[2] + " bugged command (1) \"" + item[1] + "\"", 0)
-			else
-				self.PrintMessage(item[2] + " bugged command (2) \"" + item[1] + "\"")
-				self.Respond(commandId, 0, "", 0)
+		if item[1] != "" && (item[0] as Int) > 0
+			Int commandId = item[0] as Int
+			Int commandType = item[3] as Int
+			if !IntroQuest.IsCompleted() && IntroQuest.GetStage() <= 250 && item[1] != "unbound"
+				self.Respond(commandId, 1, "Crowd Control stopped while player is bound", 0)
+				return 
 			endIf
+		    if Game.EnablePlayerControls(false, true, false, false, false, false, false)
+	            Respond(commandId, 1, "Crowd Control stopped while player is bound", 0)
+	            return
+	        endif
+	        if !VampireQuest.IsCompleted() && VampireQuest.GetStage() < 250 && VampireQuest.GetStage() >= 100
+	            Respond(commandId, 1, "Crowd Control stopped during Diplomatic Immunity", 0)
+	            return
+	        endif	
+			if lastCommandId == commandId && lastCommandType == commandType
+				if commandType == 1
+					self.Respond(commandId, 1, item[2] + " bugged command (1) \"" + item[1] + "\"", 0)
+				else
+					self.Respond(commandId, 0, "", 0)
+				endIf
+			else
+				lastCommandId = item[0] as Int
+				lastCommandType = item[3] as Int
+				self.ProcessCommand(item[0] as Int, item[1], item[2], item[3] as Int)
+			endIf
+			processed += 1
 		else
-			lastCommandId = item[0] as Int
-			lastCommandType = item[3] as Int
-			self.ProcessCommand(item[0] as Int, item[1], item[2], item[3] as Int)
+			processed += 1
 		endIf
-		item_count -= 1
-	endIf
+	endWhile
 endFunction
 
 function Respond(Int id, Int status, String _message, Int miliseconds)
@@ -1301,6 +1356,7 @@ function OnInit()
     lastState = ""
 	lastCommandId = -1
 	lastCommandType = -1
+	player = game.GetPlayer()
 	self.InitRandomSpellLists()
 	self.RegisterForUpdate(0.500000)
 endFunction

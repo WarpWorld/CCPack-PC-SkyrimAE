@@ -1,50 +1,27 @@
-﻿#include "common/IDebugLog.h"  // IDebugLog
-#include "common/ITypes.h"  // SInt32
-#include "skse64_common/skse_version.h"  // RUNTIME_VERSION
-#include "skse64/GameTypes.h"  // BSFixedString
-#include "skse64/PapyrusNativeFunctions.h"  // NativeFunction, StaticFunctionTag
-#include "skse64/PapyrusVM.h"  // VMClassRegistry
-#include "skse64/PluginAPI.h"  // SKSEInterface, PluginInfo
-#include "skse64/GameEvents.h"
-#include "skse64/PapyrusEvents.h"
+﻿#include "skse64_common/skse_version.h"
+#include "skse64/GameTypes.h"
+#include "skse64/PapyrusNativeFunctions.h"
+#include "skse64/PapyrusVM.h"
+#include "skse64/PluginAPI.h"
 #include "simpleini/SimpleIni.h"
-#include "skse64/GameMenus.h"
 
-#include <ShlObj.h>  // CSIDL_MYDOCUMENTS
+#include <ShlObj.h>
 
-#include "version.h"  // VERSION_VERSTRING, VERSION_MAJOR
-
+#include "version.h"
 #include "Connector.h"
 
-#define CC_VERSION "1.1"
-#define CC_VERSION_MAJOR 1
-#define CC_IP "127.0.0.1"
 #define CC_PORT "59420"
 
-static Connector* connector = NULL;
-
-
-class CC_MenuEvent : public BSTEventSink<MenuOpenCloseEvent>
-{
-	virtual	EventResult	ReceiveEvent(MenuOpenCloseEvent* evn, EventDispatcher<MenuOpenCloseEvent>* dispatcher) override
-	{
-		if (connector != NULL)
-		{
-			connector->OnMenu(evn->opening);
-		}
-		return kEvent_Continue;
-	};
-};
-static CC_MenuEvent CC_OnMenu;
+static Connector* connector = nullptr;
 
 BSFixedString CrowdControlCheck(StaticFunctionTag*)
 {
-	return BSFixedString(CC_VERSION);
+	return BSFixedString(MYFP_VERSION_VERSTRING);
 }
 
 BSFixedString CrowdControlState(StaticFunctionTag*)
 {
-	if (connector == NULL)
+	if (connector == nullptr)
 	{
 		return BSFixedString("uninitialized");
 	}
@@ -64,10 +41,11 @@ BSFixedString CrowdControlState(StaticFunctionTag*)
 
 void CrowdControlReconnect(StaticFunctionTag*)
 {
-	if (connector == NULL)
+	if (connector == nullptr)
 	{
 		connector = new Connector();
 	}
+
 	if (!connector->IsConnected())
 	{
 		connector->ConnectAsync(CC_PORT);
@@ -84,12 +62,17 @@ void CrowdControlReconnect(StaticFunctionTag*)
 
 void CrowdControlRun(StaticFunctionTag*)
 {
+	if (connector == nullptr)
+	{
+		return;
+	}
+
 	connector->Run();
 }
 
 void CrowdControlRespond(StaticFunctionTag*, SInt32 id, SInt32 status, BSFixedString message, SInt32 miliseconds = 0)
 {
-	if (connector != NULL)
+	if (connector != nullptr)
 	{
 		connector->Respond(id, status, message, miliseconds);
 	}
@@ -97,16 +80,26 @@ void CrowdControlRespond(StaticFunctionTag*, SInt32 id, SInt32 status, BSFixedSt
 
 SInt32 CrowdControlItemCount(StaticFunctionTag*)
 {
-	if (connector == NULL) return 0;
+	if (connector == nullptr)
+	{
+		return 0;
+	}
 
 	return connector->GetItemCount();
 }
 
 VMResultArray<BSFixedString> CrowdControlPopItem(StaticFunctionTag*)
 {
-	if (connector == NULL) return VMResultArray<BSFixedString>();
+	if (connector == nullptr)
+	{
+		return VMResultArray<BSFixedString>();
+	}
 
 	auto item = connector->PopItem();
+	if (!item)
+	{
+		return VMResultArray<BSFixedString>();
+	}
 
 	auto arr = VMResultArray<BSFixedString>();
 
@@ -125,7 +118,7 @@ VMResultArray<BSFixedString> CrowdControlPopItem(StaticFunctionTag*)
 
 SInt32 CrowdControlHasTimer(StaticFunctionTag*, BSFixedString command_name)
 {
-	if (connector != NULL)
+	if (connector != nullptr)
 	{
 		return connector->HasTimer(command_name.c_str()) ? 1 : 0;
 	}
@@ -134,7 +127,7 @@ SInt32 CrowdControlHasTimer(StaticFunctionTag*, BSFixedString command_name)
 
 void CrowdControlClearTimers(StaticFunctionTag*)
 {
-	if (connector != NULL)
+	if (connector != nullptr)
 	{
 		connector->ClearTimers();
 	}
@@ -142,6 +135,7 @@ void CrowdControlClearTimers(StaticFunctionTag*)
 
 static CSimpleIniA ini;
 static bool iniLoaded = false;
+
 bool LoadIni()
 {
 	if (!iniLoaded)
@@ -151,10 +145,9 @@ bool LoadIni()
 		if (SUCCEEDED(error))
 		{
 			strcat_s(path, sizeof(path), "\\My Games\\Skyrim Special Edition\\CrowdControl.ini");
-			auto error = ini.LoadFile(path);
-			if (error < 0)
+			const SI_Error loadError = ini.LoadFile(path);
+			if (loadError < 0)
 			{
-				//_ERROR("Loading Crowd Control ini failed: %s", error);
 				return false;
 			}
 			iniLoaded = true;
@@ -171,14 +164,20 @@ bool LoadIni()
 
 SInt32 GetIntSetting(StaticFunctionTag*, BSFixedString section, BSFixedString key)
 {
-	if (!LoadIni()) return 1;
-	return ini.GetLongValue(section, key, 0);
+	if (!LoadIni())
+	{
+		return 0;
+	}
+	return static_cast<SInt32>(ini.GetLongValue(section, key, 0));
 }
 
 float GetFloatSetting(StaticFunctionTag*, BSFixedString section, BSFixedString key)
 {
-	if (!LoadIni()) return 1;
-	return ini.GetDoubleValue(section, key, 0);
+	if (!LoadIni())
+	{
+		return 0.0f;
+	}
+	return static_cast<float>(ini.GetDoubleValue(section, key, 0.0));
 }
 
 bool RegisterFuncs(VMClassRegistry* a_registry)
@@ -210,12 +209,12 @@ extern "C" {
 		"dtothefourth",
 		"dtothefourth@gmail.com",
 
-		0,    // not version independent
 		0,
-		
-		{ RUNTIME_VERSION_1_6_1170, 0 },    // compatible with 1.6.1170
+		0,
 
-		0,    // works with any version of the script extender. you probably do not need to put anything here
+		{ RUNTIME_VERSION_1_6_1170, 0 },
+
+		0,
 	};
 
 	bool SKSEPlugin_Query(const SKSEInterface* a_skse, PluginInfo* a_info)
@@ -233,12 +232,7 @@ extern "C" {
 		if (a_skse->isEditor) {
 			_FATALERROR("[FATAL ERROR] Loaded in editor, marking as incompatible!\n");
 			return false;
-		} 
-		
-		//else if (a_skse->runtimeVersion != RUNTIME_VERSION_1_5_73) {
-		//	_FATALERROR("[FATAL ERROR] Unsupported runtime version %08X!\n", a_skse->runtimeVersion);
-		//	return false;
-		//}
+		}
 
 		return true;
 	}
@@ -253,24 +247,15 @@ extern "C" {
 			connector = new Connector();
 
 			SKSEPapyrusInterface* papyrus = (SKSEPapyrusInterface*)a_skse->QueryInterface(kInterface_Papyrus);
+			if (!papyrus)
+			{
+				_ERROR("[SKSEPlugin_Load] Failed to query Papyrus interface");
+				return false;
+			}
 
 			papyrus->Register(RegisterFuncs);
-
-			/*if (!connector->Connect(CC_PORT))
-			{
-				_ERROR(connector->GetError());
-			}
-			else
-			{
-				_MESSAGE("Crowd Control Connected");
-			}*/
-
-			auto* messaging = (SKSEMessagingInterface*)a_skse->QueryInterface(kInterface_Messaging);
-
-			auto* mm = MenuManager::GetSingleton();
-			//mm->MenuOpenCloseEventDispatcher()->AddEventSink(&CC_OnMenu);
 		}
-		catch (std::exception e)
+		catch (const std::exception& e)
 		{
 			_ERROR("[SKSEPlugin_Load] %s", e.what());
 		}

@@ -8,57 +8,21 @@
 #include <thread>
 #include <array>
 #include <map>
+#include <atomic>
+#include <memory>
+#include <string>
 
 #include "skse64/GameTypes.h"
 #include "skse64/PluginAPI.h"
 
-template <class value_type>
-class value_lock
-{
-private:
-	value_type* value;
-	value_type unlock_value;
-
-	bool locked = false;
-
-public:
-	value_lock(value_type* value, value_type lock_value, value_type unlock_value)
-	{
-		this->value = value;
-		this->unlock_value = unlock_value;
-
-		*value = lock_value;
-		locked = true;
-	}
-
-	~value_lock()
-	{
-		if (locked)
-		{
-			*value = unlock_value;
-			locked = false;
-		}
-	}
-
-	void Unlock()
-	{
-		if (locked)
-		{
-			*value = unlock_value;
-			locked = false;
-		}
-	}
-};
-
 struct Command
 {
-public:
 	UINT id = 0;
 	std::string command;
 	std::string viewer;
-	int type;
-	long long time;
-	int duration;
+	int type = 0;
+	long long time = 0;
+	int duration = 0;
 };
 
 class Connector
@@ -67,33 +31,43 @@ class Connector
 	int iResult = 0;
 
 	bool hasError = false;
-	char error[100];
+	char error[100] = {};
 
 	std::mutex m_mutex;
 	std::map<UINT, std::shared_ptr<Command>> command_map;
+	std::map<UINT, std::shared_ptr<Command>> pending_map;
 	std::map<std::string, std::shared_ptr<Command>> timer_map;
 
 	std::future<void> run_thread;
 	std::future<void> command_check_thread;
 	std::future<bool> connect_thread;
-	std::future<void> papyrus_check;
 
 	std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
 	std::chrono::steady_clock::time_point last_update = std::chrono::steady_clock::now();
 
+	std::atomic<bool> m_shutdown{ false };
+	std::atomic<bool> running{ false };
+	std::atomic<bool> connecting{ false };
+	std::atomic<bool> checking{ false };
+	std::atomic<bool> menuOpened{ false };
+
+	std::string socketBuffer;
+
 	long long GetElapsedTime();
 	long long GetElapsedTime(std::chrono::steady_clock::time_point time);
+
+	std::shared_ptr<Command> FindCommandLocked(UINT command_id);
+	bool HasTimerLocked(const std::string& command_name);
+	bool SendSocket(const char* data, size_t length);
+	bool SetSocketNonBlocking(SOCKET socket);
+	void CloseSocket();
+	void StopBackgroundThreads();
+	bool ParseCommand(const std::string& json, UINT& command_id, std::string& command_code, std::string& command_viewer, int& command_type, int& command_dur);
 
 	void _RunTimer();
 	void _Run();
 
-	std::string socketBuffer = "";
 	std::vector<std::string> BufferSocketResponse(const char* buf, size_t buf_size);
-
-	bool running = false;
-	bool connecting = false;
-	bool checking = false;
-	bool menuOpened = false;
 
 public:
 
@@ -114,7 +88,7 @@ public:
 	void NewTimer(UINT command_id, int miliseconds);
 	void ExtendTimer(UINT command_id, int miliseconds);
 	bool HasTimer(UINT command_id);
-	bool HasTimer(std::string command_name);
+	bool HasTimer(const std::string& command_name);
 	void ClearTimers();
 
 	void ConnectAsync(const char* port);
@@ -125,4 +99,3 @@ public:
 
 	void Run();
 };
-

@@ -1,2 +1,56 @@
-
+# Visual Studio / MSBuild
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
 *.ipch
+*.aps
+*.ncb
+*.opensdf
+*.sdf
+*.cachefile
+*.log
+*.tlog
+*.binlog
+
+# C/C++ build output
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.ilk
+*.lib
+*.exp
+*.idb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+
+# Skyrim / SKSE compiled outputs
+*.dll
+*.pex
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Local SKSE source junctions (created by BuildDLL.bat)
+Source/DLL/skse64/
+Source/DLL/skse64_common/
+Source/DLL/skse64_loader/
+Source/DLL/skse64_loader_common/
+Source/DLL/skse64_steam_loader/
+Source/DLL/common/
+Source/DLL/sheets/

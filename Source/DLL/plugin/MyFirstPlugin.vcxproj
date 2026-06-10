@@ -20,13 +20,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v142</PlatformToolset>
+      <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v142</PlatformToolset>
+      <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -47,19 +47,22 @@
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
     <PreLinkEventUseInBuild>false</PreLinkEventUseInBuild>
+    <OutDir>$(SkseRoot)x64\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)x64\$(Configuration)\</IntDir>
+    <TargetName>CrowdControl</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
     <PreLinkEventUseInBuild>false</PreLinkEventUseInBuild>
-    <IncludePath>C:\Users\Natalie\Desktop\Git Code\Skyrim-Test\skse64\plugin\src;$(IncludePath)</IncludePath>
+    <OutDir>$(SkseRoot)x64\$(Configuration)\</OutDir>
+    <IntDir>$(ProjectDir)x64\$(Configuration)\</IntDir>
     <TargetName>CrowdControl</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;PLUGIN_EXAMPLE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -67,7 +70,6 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <ExceptionHandling>Sync</ExceptionHandling>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -82,7 +84,7 @@
       <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SkseRoot)common\common\x64_v143\Release\common_vc14.lib;$(SkseRoot)skse64\skse64_common\x64\Release\skse64_common.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>
@@ -105,7 +107,6 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)..;$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;PLUGIN_EXAMPLE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -113,7 +114,6 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <ForcedIncludeFiles>common/IPrefix.h</ForcedIncludeFiles>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <OmitFramePointers>
       </OmitFramePointers>
@@ -130,7 +130,7 @@
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SkseRoot)common\common\x64_v143\Release\common_vc14.lib;$(SkseRoot)skse64\skse64_common\x64\Release\skse64_common.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>
@@ -139,26 +139,21 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Message>
-      </Message>
-      <Command>
-      </Command>
+      <Command>copy /Y "$(TargetPath)" "$(ProjectDir)..\..\..\Skyrim AE Plugin\Data\SKSE\Plugins\CrowdControl.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="exports.def" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\skse64\skse64.vcxproj">
-      <Project>{7028b79c-06e3-4d9a-b38c-1dc3680b1bdb}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\skse64_common\skse64_common.vcxproj">
-      <Project>{5fd1c08d-db80-480c-a1c6-f0920005cd13}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="src\Connector.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="..\skse64\skse64\GameAPI.cpp" />
+    <ClCompile Include="..\skse64\skse64\GameTypes.cpp" />
+    <ClCompile Include="..\skse64\skse64\GameUtilities.cpp" />
+    <ClCompile Include="..\skse64\skse64\PapyrusArgs.cpp" />
+    <ClCompile Include="..\skse64\skse64\PapyrusInterfaces.cpp" />
+    <ClCompile Include="..\skse64\skse64\PapyrusVM.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\version.h" />
