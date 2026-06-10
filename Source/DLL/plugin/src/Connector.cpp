@@ -139,7 +139,18 @@ bool Connector::IsGamePaused() const
 
 bool Connector::IsTransientResponse(SInt32 status) const
 {
-	return status == 3;
+	return status == 3 || status == 6 || status == 7;
+}
+
+bool Connector::IsGamePausedForTimers() const
+{
+	return QueryNativeGamePaused() || gamePaused.load() || menuOpened.load();
+}
+
+long long Connector::GetTimerRemainingMs(const Command& command) const
+{
+	const long long remaining = command.time - GetElapsedTime();
+	return remaining > 0 ? remaining : 0;
 }
 
 bool Connector::IsCommandFinishedLocked(UINT command_id) const
@@ -462,7 +473,7 @@ bool Connector::SendSocket(const char* data, size_t length)
 	return true;
 }
 
-bool Connector::SendResponseSocket(UINT command_id, SInt32 status, const char* message)
+bool Connector::SendResponseSocket(UINT command_id, SInt32 status, const char* message, long long timeRemaining)
 {
 	if (m_socket == INVALID_SOCKET)
 	{
@@ -484,15 +495,21 @@ bool Connector::SendResponseSocket(UINT command_id, SInt32 status, const char* m
 		data.AddMember("message", val, allocator);
 	}
 
+	if (timeRemaining >= 0)
+	{
+		data.AddMember("timeRemaining", timeRemaining, allocator);
+	}
+
 	rapidjson::StringBuffer buf;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
 	data.Accept(writer);
 	buf.Put('\0');
 
 	const bool sent = SendSocket(buf.GetString(), buf.GetLength());
-	CCLog::Write("[CC OUT] id=%u status=%d message=\"%s\" sent=%d",
+	CCLog::Write("[CC OUT] id=%u status=%d timeRemaining=%lld message=\"%s\" sent=%d",
 		command_id,
 		status,
+		timeRemaining,
 		message ? message : "",
 		sent ? 1 : 0);
 	return sent;
@@ -557,6 +574,7 @@ void Connector::Respond(SInt32 id, SInt32 status, BSFixedString message, int mil
 	{
 		const UINT commandId = static_cast<UINT>(id);
 		SInt32 responseStatus = status;
+		long long timeRemaining = -1;
 
 		{
 			std::lock_guard lock(m_mutex);
@@ -578,15 +596,25 @@ void Connector::Respond(SInt32 id, SInt32 status, BSFixedString message, int mil
 			if (status == 4)
 			{
 				responseStatus = 0;
+				int effectiveMs = miliseconds;
+				if (c->duration > 0)
+				{
+					effectiveMs = c->duration;
+				}
+				timeRemaining = static_cast<long long>(effectiveMs);
 				if (!HasTimer(id))
 				{
-					NewTimer(commandId, miliseconds);
+					NewTimer(commandId, effectiveMs);
 				}
 				else
 				{
 					_MESSAGE("Extending timer for %s", c->command.c_str());
-					ExtendTimer(commandId, miliseconds);
+					ExtendTimer(commandId, effectiveMs);
 				}
+			}
+			else if (status == 8)
+			{
+				timeRemaining = 0;
 			}
 
 			std::lock_guard lock(m_mutex);
@@ -600,13 +628,14 @@ void Connector::Respond(SInt32 id, SInt32 status, BSFixedString message, int mil
 		const char* messageText = message.c_str();
 		const std::string cachedMessage = messageText ? messageText : "";
 
-		CCLog::Write("[CC RESPOND] id=%d status=%d message=\"%s\" from=papyrus",
+		CCLog::Write("[CC RESPOND] id=%d status=%d timeRemaining=%lld message=\"%s\" from=papyrus",
 			id,
 			responseStatus,
+			timeRemaining,
 			cachedMessage.c_str());
-		SendResponseSocket(commandId, responseStatus, cachedMessage.c_str());
+		SendResponseSocket(commandId, responseStatus, cachedMessage.c_str(), timeRemaining);
 
-		if (IsTransientResponse(responseStatus))
+		if (IsTransientResponse(responseStatus) || status == 4)
 		{
 			return;
 		}
@@ -659,12 +688,12 @@ void Connector::Run()
 	EnsureTimerThread();
 }
 
-long long Connector::GetElapsedTime()
+long long Connector::GetElapsedTime() const
 {
 	return GetElapsedTime(start_time);
 }
 
-long long Connector::GetElapsedTime(std::chrono::steady_clock::time_point time)
+long long Connector::GetElapsedTime(std::chrono::steady_clock::time_point time) const
 {
 	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - time).count();
 }
@@ -677,11 +706,13 @@ void Connector::_RunTimer()
 		Sleep(500);
 		try
 		{
+			std::vector<std::pair<UINT, long long>> pauseResumeUpdates;
 			{
 				std::lock_guard guard(m_mutex);
 
+				const bool paused = IsGamePausedForTimers();
 				long long delta_time = 0;
-				if (menuOpened.load() || gamePaused.load())
+				if (paused)
 				{
 					delta_time = GetElapsedTime(last_update);
 				}
@@ -703,7 +734,32 @@ void Connector::_RunTimer()
 					}
 				}
 
+				if (paused != timedEffectsPaused)
+				{
+					for (const auto& entry : timer_map)
+					{
+						pauseResumeUpdates.push_back({
+							entry.second->id,
+							GetTimerRemainingMs(*entry.second)
+						});
+					}
+
+					timedEffectsPaused = paused;
+					CCLog::Write("[CC TIMER] %s %d active timed effect(s)",
+						paused ? "paused" : "resumed",
+						static_cast<int>(pauseResumeUpdates.size()));
+				}
+
 				last_update = std::chrono::steady_clock::now();
+			}
+
+			for (const auto& update : pauseResumeUpdates)
+			{
+				SendResponseSocket(
+					update.first,
+					timedEffectsPaused ? 6 : 7,
+					"",
+					update.second);
 			}
 
 			EnsureTimerThread();
@@ -774,9 +830,25 @@ bool Connector::ParseCommand(const std::string& json, UINT& command_id, std::str
 		return false;
 	}
 
-	if (data.HasMember("duration") && data["duration"].IsInt())
+	if (data.HasMember("duration"))
 	{
-		command_dur = data["duration"].GetInt();
+		const auto& durationValue = data["duration"];
+		if (durationValue.IsInt())
+		{
+			command_dur = durationValue.GetInt();
+		}
+		else if (durationValue.IsUint())
+		{
+			command_dur = static_cast<int>(durationValue.GetUint());
+		}
+		else if (durationValue.IsInt64())
+		{
+			command_dur = static_cast<int>(durationValue.GetInt64());
+		}
+		else if (durationValue.IsUint64())
+		{
+			command_dur = static_cast<int>(durationValue.GetUint64());
+		}
 	}
 
 	return true;
@@ -833,10 +905,11 @@ void Connector::_Run()
 					}
 
 					const bool paused = IsGamePaused();
-					CCLog::Write("[CC IN] id=%u code=%s type=%d viewer=%s state=%d paused=%d native=%d raw=%s",
+					CCLog::Write("[CC IN] id=%u code=%s type=%d duration=%d viewer=%s state=%d paused=%d native=%d raw=%s",
 						command_id,
 						command_code.c_str(),
 						command_type,
+						command_dur,
 						command_viewer.c_str(),
 						inboundState,
 						paused ? 1 : 0,

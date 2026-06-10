@@ -61,11 +61,12 @@ class Connector
 	std::atomic<bool> checking{ false };
 	std::atomic<bool> menuOpened{ false };
 	std::atomic<bool> gamePaused{ false };
+	bool timedEffectsPaused{ false };
 
 	std::string socketBuffer;
 
-	long long GetElapsedTime();
-	long long GetElapsedTime(std::chrono::steady_clock::time_point time);
+	long long GetElapsedTime() const;
+	long long GetElapsedTime(std::chrono::steady_clock::time_point time) const;
 
 	std::shared_ptr<Command> FindCommandLocked(UINT command_id);
 	bool HasTimerLocked(const std::string& command_name);
@@ -81,8 +82,10 @@ class Connector
 	bool IsCommandFinishedLocked(UINT command_id) const;
 	bool IsTransientResponse(SInt32 status) const;
 	bool IsGamePaused() const;
+	bool IsGamePausedForTimers() const;
+	long long GetTimerRemainingMs(const Command& command) const;
 	void EnsureTimerThread();
-	bool SendResponseSocket(UINT command_id, SInt32 status, const char* message);
+	bool SendResponseSocket(UINT command_id, SInt32 status, const char* message, long long timeRemaining = -1);
 	void RetryQueuedCommands();
 
 	std::vector<std::string> BufferSocketResponse(const char* buf, size_t buf_size);

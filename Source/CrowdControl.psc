@@ -616,7 +616,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		if type == 1
 			self.CastRandomSpell(id, viewer, false)
 		else
-			self.Respond(id, 0, "", 0)
+			self.Respond(id, 8, "", 0)
 		endIf
 	elseIf command == "disable_crouch"
 		if type == 1
@@ -628,7 +628,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			endIf
 		else
 			game.EnablePlayerControls(false, false, false, false, true, false, false, true, 0)
-			self.Respond(id, 0, "Crouch is restored", 0)
+			self.Respond(id, 8, "Crouch is restored", 0)
 		endIf
 	elseIf command == "destroy_left" || command == "destroy_right"
 		Int hand = 0
@@ -696,7 +696,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 				self.Respond(id, 4, viewer + " increased damage", 30000)
 			endIf
 		else
-			self.Respond(id, 0, "Damage increase has been reverted", 0)
+			self.Respond(id, 8, "Damage increase has been reverted", 0)
 		endIf
 	elseIf command == "decrease_damage"
 		if type == 1
@@ -707,7 +707,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 				self.Respond(id, 4, viewer + " decreased damage", 30000)
 			endIf
 		else
-			self.Respond(id, 0, "Damage decrease has been reverted", 0)
+			self.Respond(id, 8, "Damage decrease has been reverted", 0)
 		endIf
 	elseIf command == "increase_speed"
 		if type == 1
@@ -722,7 +722,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		else
 			player.AddItem(LockpickItem as form, 1, true)
 			player.RemoveItem(LockpickItem as form, 1, true, none)
-			self.Respond(id, 0, "Speed increase has been reverted", 0)
+			self.Respond(id, 8, "Speed increase has been reverted", 0)
 		endIf
 	elseIf command == "decrease_speed"
 		if type == 1
@@ -737,7 +737,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		else
 			player.AddItem(LockpickItem as form, 1, true)
 			player.RemoveItem(LockpickItem as form, 1, true, none)
-			self.Respond(id, 0, "Speed decrease has been reverted", 0)
+			self.Respond(id, 8, "Speed decrease has been reverted", 0)
 		endIf
 	elseIf command == "freeze"
 		if type == 1
@@ -750,7 +750,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		else
 			game.GetPlayer().SetRestrained(false)
 			game.EnableFastTravel(true)
-			self.Respond(id, 0, "freeze ended", 0)
+			self.Respond(id, 8, "freeze ended", 0)
 		endIf
 	elseIf command == "increase_jump"
 		if type == 1
@@ -762,7 +762,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			endIf
 		else
 			jumpIncreased = false
-			self.Respond(id, 0, "Jump increase has been reverted", 0)
+			self.Respond(id, 8, "Jump increase has been reverted", 0)
 		endIf
 	elseIf command == "decrease_jump"
 		if type == 1
@@ -774,7 +774,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			endIf
 		else
 			jumpReduced = false
-			self.Respond(id, 0, "Jump decrease has been reverted", 0)
+			self.Respond(id, 8, "Jump decrease has been reverted", 0)
 		endIf
 	elseIf command == "infinite_stamina"
 		if type == 1
@@ -789,7 +789,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			staminaInfinite = false
 			player.ModAV("stamina", -10000 as Float)
 			player.RestoreAV("stamina", player.GetAVMax("stamina"))
-			self.Respond(id, 0, "Stamina no longer infinite", 0)
+			self.Respond(id, 8, "Stamina no longer infinite", 0)
 		endIf
 	elseIf command == "deplete_stamina"
 		if CrowdControl.CC_HasTimer("infinite_stamina")
@@ -827,8 +827,12 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			self.Respond(id, 3, "Already in third person", 0)
 		endIf
 	elseIf command == "blood"
-		game.TriggerScreenBlood(25)
-		self.Respond(id, 4, viewer + " splashed blood on the screen", 10000)
+		if type == 1
+			game.TriggerScreenBlood(25)
+			self.Respond(id, 4, viewer + " splashed blood on the screen", 10000)
+		else
+			self.Respond(id, 8, "", 0)
+		endIf
 	elseIf command == "vibrate"
 		if game.UsingGamepad()
 			game.ShakeController(0.750000, 0.750000, 3.00000)
@@ -1007,7 +1011,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			endIf
 		else
 			game.EnableFastTravel(true)
-			self.Respond(id, 0, "Fast travel is restored", 0)
+			self.Respond(id, 8, "Fast travel is restored", 0)
 		endIf
 	elseIf command == "random_fast_travel"
 		if player.IsOverEncumbered()
@@ -1088,7 +1092,7 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		else
 			weatherOverride = false
 			weather.ReleaseOverride()
-			self.Respond(id, 0, "Weather ended", 0)
+			self.Respond(id, 8, "Weather ended", 0)
 		endIf
 	elseIf stringutil.Find(command, "spawnb_", 0) == 0
 		String spawnname = stringutil.Substring(command, 7, 0)
