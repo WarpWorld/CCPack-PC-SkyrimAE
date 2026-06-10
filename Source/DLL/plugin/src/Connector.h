@@ -8,6 +8,7 @@
 #include <thread>
 #include <array>
 #include <map>
+#include <set>
 #include <atomic>
 #include <memory>
 #include <string>
@@ -21,8 +22,15 @@ struct Command
 	std::string command;
 	std::string viewer;
 	int type = 0;
+	long long received_at = 0;
 	long long time = 0;
 	int duration = 0;
+};
+
+struct CompletedResponse
+{
+	SInt32 status = 0;
+	std::string message;
 };
 
 class Connector
@@ -37,6 +45,8 @@ class Connector
 	std::map<UINT, std::shared_ptr<Command>> command_map;
 	std::map<UINT, std::shared_ptr<Command>> pending_map;
 	std::map<std::string, std::shared_ptr<Command>> timer_map;
+	std::set<UINT> completed_ids;
+	std::map<UINT, CompletedResponse> completed_responses;
 
 	std::future<void> run_thread;
 	std::future<void> command_check_thread;
@@ -50,6 +60,7 @@ class Connector
 	std::atomic<bool> connecting{ false };
 	std::atomic<bool> checking{ false };
 	std::atomic<bool> menuOpened{ false };
+	std::atomic<bool> gamePaused{ false };
 
 	std::string socketBuffer;
 
@@ -66,6 +77,13 @@ class Connector
 
 	void _RunTimer();
 	void _Run();
+	void ReplayCompletedResponse(UINT command_id);
+	bool IsCommandFinishedLocked(UINT command_id) const;
+	bool IsTransientResponse(SInt32 status) const;
+	bool IsGamePaused() const;
+	void EnsureTimerThread();
+	bool SendResponseSocket(UINT command_id, SInt32 status, const char* message);
+	void RetryQueuedCommands();
 
 	std::vector<std::string> BufferSocketResponse(const char* buf, size_t buf_size);
 
@@ -81,9 +99,12 @@ public:
 	bool IsRunning();
 
 	void OnMenu(bool isOpen);
+	void SetGamePaused(bool isPaused);
+	void RetryQueued();
 
 	int GetItemCount();
 	std::shared_ptr<Command> PopItem();
+	bool IsCommandFinished(UINT command_id);
 
 	void NewTimer(UINT command_id, int miliseconds);
 	void ExtendTimer(UINT command_id, int miliseconds);

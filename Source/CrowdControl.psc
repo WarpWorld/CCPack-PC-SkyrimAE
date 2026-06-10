@@ -137,6 +137,19 @@ Int function CC_HasTimer(String command_name) global native
 
 String function CC_Version() global native
 
+function CC_SetGamePaused(Bool isPaused) global native
+
+Bool function CC_IsGamePaused() global native
+
+function CC_RetryQueued() global native
+
+Bool function CC_IsCommandFinished(Int commandId) global native
+
+Bool function IsGamePaused()
+
+	return CrowdControl.CC_IsGamePaused()
+endFunction
+
 race function GetRaceRef(String race_name)
 
 	if race_name == "argonian"
@@ -496,12 +509,8 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			self.Respond(id, 0, viewer + " decreased your enchanting skill", 0)
 		endIf
 	elseIf command == "cheeserain"
-		Int loop = 9
-		while loop
-			loop -= 1
-			ObjectReference ref = game.GetPlayer().PlaceAtMe(CheeseWheelPot as form, 1, false, false)
-		endWhile
 		self.Respond(id, 0, viewer + " sent an explosion of cheese", 0)
+		self.SpawnCheeseRain()
 	elseIf command == "take_lockpick"
 		Int amount = game.GetPlayer().GetItemCount(LockpickItem as form)
 		if amount > 0
@@ -633,11 +642,18 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 			self.Respond(id, 1, viewer + " tried to remove nothingness", 0)
 		elseIf itemType == 9
 			spell cur_spell = player.GetEquippedSpell(hand)
-			player.RemoveSpell(cur_spell)
-			if player.GetEquippedSpell(hand)
-				self.Respond(id, 1, viewer + " could not removed spell " + cur_spell.GetName() + " from you", 0)
+			if cur_spell == none
+				self.Respond(id, 1, viewer + " tried to remove nothingness", 0)
 			else
-				self.Respond(id, 0, viewer + " removed spell " + cur_spell.GetName() + " from you", 0)
+				String spellName = cur_spell.GetName()
+				player.UnequipSpell(cur_spell, hand)
+				player.RemoveSpell(cur_spell)
+				utility.Wait(0)
+				if player.GetEquippedSpell(hand) != none || player.HasSpell(cur_spell)
+					self.Respond(id, 1, viewer + " could not remove spell " + spellName + " from you", 0)
+				else
+					self.Respond(id, 0, viewer + " removed spell " + spellName + " from you", 0)
+				endIf
 			endIf
 		elseIf itemType == 10
 			armor cur_shield = player.GetEquippedShield()
@@ -1164,12 +1180,13 @@ function OnUpdate()
 		debug.Notification("Crowd Control is " + newState)
 		lastState = newState
 	endIf
-	if newState == "running"
-		self.RunCommands()
+	if newState == "disconnected" || newState == "uninitialized"
+		CrowdControl.CC_Reconnect()
 	elseIf newState == "stopped"
 		CrowdControl.CC_Run()
-	else
-		CrowdControl.CC_Reconnect()
+	endIf
+	if newState != "disconnected" && newState != "uninitialized" && !self.IsGamePaused()
+		self.RunCommands()
 	endIf
 endFunction
 
@@ -1272,6 +1289,37 @@ function CastRandomSpell(Int id, String viewer, Bool good)
 	self.Respond(id, status, viewer + " casted " + spellName + " on player", 3000)
 endFunction
 
+function SpawnCheeseRain()
+
+	if player == none
+		player = game.GetPlayer()
+	endIf
+	form cheeseForm = CheeseWheelRef as form
+	if cheeseForm == none
+		cheeseForm = CheeseWheelPot as form
+	endIf
+	if cheeseForm == none
+		return 
+	endIf
+	Int count = 9
+	while count > 0
+		count -= 1
+		float offsetX = utility.RandomFloat(-8.0, 8.0)
+		float offsetY = utility.RandomFloat(-8.0, 8.0)
+		float offsetZ = utility.RandomFloat(4.0, 12.0)
+		ObjectReference ref = player.PlaceAtMe(cheeseForm, 1, false, false)
+		if ref != none
+			ref.MoveTo(player as ObjectReference, offsetX, offsetY, offsetZ)
+			float impulseX = utility.RandomFloat(-0.300000, 0.300000)
+			float impulseY = utility.RandomFloat(-0.300000, 0.300000)
+			float impulseZ = utility.RandomFloat(0.050000, 0.150000)
+			float impulseMag = utility.RandomFloat(45.0, 85.0)
+			ref.ApplyHavokImpulse(impulseX, impulseY, impulseZ, impulseMag)
+		endIf
+		utility.Wait(0.040000)
+	endWhile
+endFunction
+
 function PrintMessage(String _message)
 
 	if self.ShouldNotifyCommand()
@@ -1281,6 +1329,9 @@ endFunction
 
 function RunCommands()
 
+	if self.IsGamePaused()
+		return 
+	endIf
 	if player == none
 		player = game.GetPlayer()
 	endIf
@@ -1288,6 +1339,8 @@ function RunCommands()
 		return 
 	endIf
 	Int processed = 0
+	Int previousBatchId = -1
+	Int previousBatchType = -1
 	while processed < 10
 		String[] item = CrowdControl.CC_PopItem()
 		if item.length < 4
@@ -1308,15 +1361,11 @@ function RunCommands()
 	            Respond(commandId, 1, "Crowd Control stopped during Diplomatic Immunity", 0)
 	            return
 	        endif	
-			if lastCommandId == commandId && lastCommandType == commandType
-				if commandType == 1
-					self.Respond(commandId, 1, item[2] + " bugged command (1) \"" + item[1] + "\"", 0)
-				else
-					self.Respond(commandId, 0, "", 0)
-				endIf
+			if previousBatchId == commandId && previousBatchType == commandType
+				self.Respond(commandId, 0, "", 0)
 			else
-				lastCommandId = item[0] as Int
-				lastCommandType = item[3] as Int
+				previousBatchId = commandId
+				previousBatchType = commandType
 				self.ProcessCommand(item[0] as Int, item[1], item[2], item[3] as Int)
 			endIf
 			processed += 1
@@ -1330,6 +1379,8 @@ function Respond(Int id, Int status, String _message, Int miliseconds)
 
 	CrowdControl.CC_Respond(id, status, _message, miliseconds)
 	self.PrintMessage(_message)
+	lastCommandId = -1
+	lastCommandType = -1
 endFunction
 
 weather function GetWeatherRef(String spawn_name)
@@ -1358,7 +1409,7 @@ function OnInit()
 	lastCommandType = -1
 	player = game.GetPlayer()
 	self.InitRandomSpellLists()
-	self.RegisterForUpdate(0.500000)
+	self.RegisterForUpdate(0.050000)
 endFunction
 
 actorbase function GetSpawnRefB(String spawn_name)

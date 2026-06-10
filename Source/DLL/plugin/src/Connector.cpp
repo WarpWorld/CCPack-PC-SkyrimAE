@@ -1,4 +1,6 @@
 #include "Connector.h"
+#include "CCLog.h"
+#include "GamePause.h"
 
 #include <ws2tcpip.h>
 #include <stdio.h>
@@ -106,12 +108,70 @@ bool Connector::IsConnected()
 
 bool Connector::IsRunning()
 {
-	return running.load() && checking.load();
+	return IsConnected() && running.load();
 }
 
 void Connector::OnMenu(bool isOpen)
 {
 	menuOpened.store(isOpen);
+}
+
+void Connector::SetGamePaused(bool isPaused)
+{
+	const bool wasPaused = gamePaused.load();
+	gamePaused.store(isPaused);
+	OnMenu(isPaused);
+	if (wasPaused != isPaused)
+	{
+		CCLog::Write("[CC PAUSE] gamePaused=%d menuOpened=%d", isPaused ? 1 : 0, menuOpened.load() ? 1 : 0);
+	}
+}
+
+bool Connector::IsGamePaused() const
+{
+	if (QueryNativeGamePaused())
+	{
+		return true;
+	}
+
+	return gamePaused.load() || menuOpened.load();
+}
+
+bool Connector::IsTransientResponse(SInt32 status) const
+{
+	return status == 3;
+}
+
+bool Connector::IsCommandFinishedLocked(UINT command_id) const
+{
+	return completed_ids.find(command_id) != completed_ids.end();
+}
+
+bool Connector::IsCommandFinished(UINT command_id)
+{
+	std::lock_guard guard(m_mutex);
+	return IsCommandFinishedLocked(command_id);
+}
+
+void Connector::EnsureTimerThread()
+{
+	if (m_shutdown.load() || !IsConnected())
+	{
+		return;
+	}
+
+	if (command_check_thread.valid())
+	{
+		const auto status = command_check_thread.wait_for(std::chrono::milliseconds::zero());
+		if (status == std::future_status::ready)
+		{
+			command_check_thread = std::async(std::launch::async, &Connector::_RunTimer, this);
+		}
+	}
+	else
+	{
+		command_check_thread = std::async(std::launch::async, &Connector::_RunTimer, this);
+	}
 }
 
 int Connector::GetItemCount()
@@ -141,22 +201,38 @@ std::shared_ptr<Command> Connector::PopItem()
 {
 	try
 	{
-		std::lock_guard guard(m_mutex);
-		if (command_map.empty())
+		if (IsGamePaused())
 		{
+			CCLog::Write("[CC POP] skipped - game paused");
 			return nullptr;
 		}
 
-		auto iter = command_map.begin();
-		auto command = iter->second;
-		command_map.erase(iter);
-		command->time = GetElapsedTime();
-		pending_map.insert({ command->id, command });
-		return command;
+		{
+			std::lock_guard guard(m_mutex);
+			if (command_map.empty())
+			{
+				return nullptr;
+			}
+
+			auto iter = command_map.begin();
+			auto command = iter->second;
+			if (completed_ids.find(command->id) != completed_ids.end())
+			{
+				command_map.erase(iter);
+				return nullptr;
+			}
+
+			const long long now = GetElapsedTime();
+			command_map.erase(iter);
+			command->time = now;
+			pending_map.insert({ command->id, command });
+			CCLog::Write("[CC POP] id=%u code=%s type=%d", command->id, command->command.c_str(), command->type);
+			return command;
+		}
 	}
 	catch (const std::exception& e)
 	{
-		_ERROR("[Connector::PopItem] %s", e.what());
+		CCLog::Write("[CC POP] error: %s", e.what());
 	}
 
 	return nullptr;
@@ -327,9 +403,16 @@ bool Connector::Connect(const char* port)
 
 		m_shutdown.store(false);
 		m_socket = socketCandidate;
+		{
+			std::lock_guard lock(m_mutex);
+			completed_ids.clear();
+			completed_responses.clear();
+		}
 		ResetError();
 		connecting.store(false);
+		CCLog::Write("[CC CONNECT] connected to 127.0.0.1:%s", port);
 		Run();
+		EnsureTimerThread();
 		return true;
 	}
 	catch (const std::exception& e)
@@ -379,44 +462,167 @@ bool Connector::SendSocket(const char* data, size_t length)
 	return true;
 }
 
+bool Connector::SendResponseSocket(UINT command_id, SInt32 status, const char* message)
+{
+	if (m_socket == INVALID_SOCKET)
+	{
+		CCLog::Write("[CC OUT] socket closed, cannot send id=%u status=%d", command_id, status);
+		return false;
+	}
+
+	rapidjson::Document data;
+	data.SetObject();
+
+	rapidjson::Document::AllocatorType& allocator = data.GetAllocator();
+	data.AddMember("id", static_cast<UINT>(command_id), allocator);
+	data.AddMember("status", status, allocator);
+
+	if (message && message[0] != '\0')
+	{
+		rapidjson::Value val;
+		val.SetString(message, static_cast<rapidjson::SizeType>(strlen(message)), allocator);
+		data.AddMember("message", val, allocator);
+	}
+
+	rapidjson::StringBuffer buf;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+	data.Accept(writer);
+	buf.Put('\0');
+
+	const bool sent = SendSocket(buf.GetString(), buf.GetLength());
+	CCLog::Write("[CC OUT] id=%u status=%d message=\"%s\" sent=%d",
+		command_id,
+		status,
+		message ? message : "",
+		sent ? 1 : 0);
+	return sent;
+}
+
+void Connector::RetryQueuedCommands()
+{
+	std::vector<UINT> queuedIds;
+	{
+		std::lock_guard lock(m_mutex);
+		for (const auto& entry : command_map)
+		{
+			if (completed_ids.find(entry.first) == completed_ids.end())
+			{
+				queuedIds.push_back(entry.first);
+			}
+		}
+	}
+
+	if (queuedIds.empty())
+	{
+		return;
+	}
+
+	CCLog::Write("[CC RETRY-QUEUE] sending status=3 for %d queued command(s) paused=%d",
+		static_cast<int>(queuedIds.size()),
+		(gamePaused.load() || menuOpened.load()) ? 1 : 0);
+
+	for (const UINT commandId : queuedIds)
+	{
+		SendResponseSocket(commandId, 3, "");
+	}
+}
+
+void Connector::RetryQueued()
+{
+	RetryQueuedCommands();
+}
+
+void Connector::ReplayCompletedResponse(UINT command_id)
+{
+	CompletedResponse cached;
+	{
+		std::lock_guard lock(m_mutex);
+		const auto iter = completed_responses.find(command_id);
+		if (iter == completed_responses.end())
+		{
+			CCLog::Write("[CC REPLAY] missing cached response for id=%u", command_id);
+			return;
+		}
+
+		cached = iter->second;
+	}
+
+	CCLog::Write("[CC REPLAY] id=%u status=%d message=\"%s\"", command_id, cached.status, cached.message.c_str());
+	SendResponseSocket(command_id, cached.status, cached.message.c_str());
+}
+
 void Connector::Respond(SInt32 id, SInt32 status, BSFixedString message, int miliseconds)
 {
 	try
 	{
-		std::shared_ptr<Command> c;
+		const UINT commandId = static_cast<UINT>(id);
+		SInt32 responseStatus = status;
+
 		{
 			std::lock_guard lock(m_mutex);
-			c = FindCommandLocked(static_cast<UINT>(id));
-			if (!c)
+			if (completed_ids.find(commandId) != completed_ids.end())
 			{
+				ReplayCompletedResponse(commandId);
 				return;
 			}
 		}
 
-		bool timer_created = false;
-		if (status == 4)
+		std::shared_ptr<Command> c;
 		{
-			timer_created = true;
-			status = 0;
-			if (!HasTimer(id))
+			std::lock_guard lock(m_mutex);
+			c = FindCommandLocked(commandId);
+		}
+
+		if (c)
+		{
+			if (status == 4)
 			{
-				NewTimer(static_cast<UINT>(id), miliseconds);
+				responseStatus = 0;
+				if (!HasTimer(id))
+				{
+					NewTimer(commandId, miliseconds);
+				}
+				else
+				{
+					_MESSAGE("Extending timer for %s", c->command.c_str());
+					ExtendTimer(commandId, miliseconds);
+				}
 			}
-			else
+
+			std::lock_guard lock(m_mutex);
+			if (!IsTransientResponse(status))
 			{
-				_MESSAGE("Extending timer for %s", c->command.c_str());
-				ExtendTimer(static_cast<UINT>(id), miliseconds);
+				pending_map.erase(commandId);
+				command_map.erase(commandId);
 			}
 		}
 
-		if (c->type == 1 || timer_created)
+		const char* messageText = message.c_str();
+		const std::string cachedMessage = messageText ? messageText : "";
+
+		CCLog::Write("[CC RESPOND] id=%d status=%d message=\"%s\" from=papyrus",
+			id,
+			responseStatus,
+			cachedMessage.c_str());
+		SendResponseSocket(commandId, responseStatus, cachedMessage.c_str());
+
+		if (IsTransientResponse(responseStatus))
 		{
-			Respond(id, status, message);
+			return;
 		}
 
-		std::lock_guard lock(m_mutex);
-		pending_map.erase(c->id);
-		command_map.erase(c->id);
+		{
+			std::lock_guard lock(m_mutex);
+			completed_ids.insert(commandId);
+			completed_responses[commandId] = { responseStatus, cachedMessage };
+			if (completed_responses.size() > 512)
+			{
+				completed_responses.clear();
+				completed_ids.clear();
+				completed_ids.insert(commandId);
+				completed_responses[commandId] = { responseStatus, cachedMessage };
+			}
+		}
 	}
 	catch (const std::exception& e)
 	{
@@ -426,42 +632,8 @@ void Connector::Respond(SInt32 id, SInt32 status, BSFixedString message, int mil
 
 void Connector::Respond(SInt32 id, SInt32 status, BSFixedString message)
 {
-	try
-	{
-		if (m_socket == INVALID_SOCKET)
-		{
-			return;
-		}
-
-		rapidjson::Document data;
-		data.SetObject();
-
-		rapidjson::Document::AllocatorType& allocator = data.GetAllocator();
-		data.AddMember("id", id, allocator);
-		data.AddMember("status", status, allocator);
-
-		const char* messageText = message.c_str();
-		if (messageText && messageText[0] != '\0')
-		{
-			rapidjson::Value val;
-			val.SetString(messageText, static_cast<rapidjson::SizeType>(strlen(messageText)), allocator);
-			data.AddMember("message", val, allocator);
-		}
-
-		rapidjson::StringBuffer buf;
-		rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-		data.Accept(writer);
-		buf.Put('\0');
-
-		if (!SendSocket(buf.GetString(), buf.GetLength()))
-		{
-			_ERROR("[Connector::Respond] Failed to send response for id %d", id);
-		}
-	}
-	catch (const std::exception& e)
-	{
-		_ERROR("[Connector::Respond 2] %s", e.what());
-	}
+	const char* messageText = message.c_str();
+	SendResponseSocket(static_cast<UINT>(id), status, messageText ? messageText : "");
 }
 
 void Connector::Run()
@@ -484,18 +656,7 @@ void Connector::Run()
 		run_thread = std::async(std::launch::async, &Connector::_Run, this);
 	}
 
-	if (command_check_thread.valid())
-	{
-		const auto status = command_check_thread.wait_for(std::chrono::milliseconds::zero());
-		if (status == std::future_status::ready)
-		{
-			command_check_thread = std::async(std::launch::async, &Connector::_RunTimer, this);
-		}
-	}
-	else
-	{
-		command_check_thread = std::async(std::launch::async, &Connector::_RunTimer, this);
-	}
+	EnsureTimerThread();
 }
 
 long long Connector::GetElapsedTime()
@@ -516,30 +677,16 @@ void Connector::_RunTimer()
 		Sleep(500);
 		try
 		{
-			std::vector<UINT> timedOut;
 			{
 				std::lock_guard guard(m_mutex);
 
 				long long delta_time = 0;
-				if (menuOpened.load())
+				if (menuOpened.load() || gamePaused.load())
 				{
 					delta_time = GetElapsedTime(last_update);
 				}
 
 				const long long cur_timer = GetElapsedTime();
-
-				for (auto iter = pending_map.begin(); iter != pending_map.end();)
-				{
-					if (iter->second->type == 1 && cur_timer - iter->second->time > 2000)
-					{
-						timedOut.push_back(iter->first);
-						iter = pending_map.erase(iter);
-					}
-					else
-					{
-						++iter;
-					}
-				}
 
 				for (auto timer_iter = timer_map.begin(); timer_iter != timer_map.end();)
 				{
@@ -559,10 +706,7 @@ void Connector::_RunTimer()
 				last_update = std::chrono::steady_clock::now();
 			}
 
-			for (UINT commandId : timedOut)
-			{
-				Respond(static_cast<SInt32>(commandId), 3, "");
-			}
+			EnsureTimerThread();
 		}
 		catch (const std::exception& e)
 		{
@@ -582,7 +726,25 @@ bool Connector::ParseCommand(const std::string& json, UINT& command_id, std::str
 		return false;
 	}
 
-	if (!data.HasMember("id") || !data["id"].IsUint())
+	if (!data.HasMember("id"))
+	{
+		return false;
+	}
+
+	if (data["id"].IsUint())
+	{
+		command_id = data["id"].GetUint();
+	}
+	else if (data["id"].IsInt())
+	{
+		const int parsedId = data["id"].GetInt();
+		if (parsedId < 0)
+		{
+			return false;
+		}
+		command_id = static_cast<UINT>(parsedId);
+	}
+	else
 	{
 		return false;
 	}
@@ -602,7 +764,6 @@ bool Connector::ParseCommand(const std::string& json, UINT& command_id, std::str
 		return false;
 	}
 
-	command_id = data["id"].GetUint();
 	command_code = data["code"].GetString();
 	command_viewer = data["viewer"].GetString();
 	command_type = data["type"].GetInt();
@@ -624,10 +785,13 @@ bool Connector::ParseCommand(const std::string& json, UINT& command_id, std::str
 void Connector::_Run()
 {
 	running.store(true);
+	CCLog::Write("[CC RECV] receive thread started");
+	EnsureTimerThread();
 	while (!m_shutdown.load() && m_socket != INVALID_SOCKET)
 	{
 		try
 		{
+			EnsureTimerThread();
 			char recvbuf[DEFAULT_BUFLEN] = {};
 			iResult = recv(m_socket, recvbuf, DEFAULT_BUFLEN - 1, 0);
 			if (iResult > 0)
@@ -647,19 +811,78 @@ void Connector::_Run()
 					int command_dur = 0;
 					if (!ParseCommand(c, command_id, command_code, command_viewer, command_type, command_dur))
 					{
-						_ERROR("[Connector::_Run] Ignoring invalid command payload");
+						CCLog::Write("[CC IN] invalid payload: %s", c.c_str());
 						continue;
 					}
 
-					std::lock_guard<std::mutex> lock(m_mutex);
-					command_map[command_id] = std::make_shared<Command>(Command{
+					int inboundState = 0;
+					{
+						std::lock_guard<std::mutex> lock(m_mutex);
+						if (completed_ids.find(command_id) != completed_ids.end())
+						{
+							inboundState = 1;
+						}
+						else if (command_map.find(command_id) != command_map.end())
+						{
+							inboundState = 2;
+						}
+						else if (pending_map.find(command_id) != pending_map.end())
+						{
+							inboundState = 3;
+						}
+					}
+
+					const bool paused = IsGamePaused();
+					CCLog::Write("[CC IN] id=%u code=%s type=%d viewer=%s state=%d paused=%d native=%d raw=%s",
 						command_id,
-						command_code,
-						command_viewer,
+						command_code.c_str(),
 						command_type,
-						GetElapsedTime(),
-						command_dur
-					});
+						command_viewer.c_str(),
+						inboundState,
+						paused ? 1 : 0,
+						QueryNativeGamePaused() ? 1 : 0,
+						c.c_str());
+
+					if (inboundState == 1)
+					{
+						ReplayCompletedResponse(command_id);
+						continue;
+					}
+
+					if (paused)
+					{
+						CCLog::Write("[CC PAUSE-RETRY] id=%u code=%s - not queued", command_id, command_code.c_str());
+						SendResponseSocket(command_id, 3, "");
+						continue;
+					}
+
+					if (inboundState == 2)
+					{
+						SendResponseSocket(command_id, 3, "");
+						continue;
+					}
+
+					if (inboundState == 3)
+					{
+						SendResponseSocket(command_id, 3, "");
+						continue;
+					}
+
+					const long long now = GetElapsedTime();
+					{
+						std::lock_guard<std::mutex> lock(m_mutex);
+						command_map[command_id] = std::make_shared<Command>(Command{
+							command_id,
+							command_code,
+							command_viewer,
+							command_type,
+							now,
+							now,
+							command_dur
+						});
+					}
+					CCLog::Write("[CC QUEUE] id=%u code=%s queued=%d", command_id, command_code.c_str(), GetItemCount());
+
 				}
 			}
 			else if (iResult == 0)
@@ -691,6 +914,7 @@ void Connector::_Run()
 	}
 
 	running.store(false);
+	CCLog::Write("[CC RECV] receive thread stopped");
 }
 
 std::vector<std::string> Connector::BufferSocketResponse(const char* buf, size_t buf_size)

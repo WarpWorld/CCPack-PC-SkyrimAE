@@ -9,10 +9,68 @@
 
 #include "version.h"
 #include "Connector.h"
+#include "CCLog.h"
+#include "GamePause.h"
+
+#include "skse64/GameEvents.h"
+#include "skse64/GameMenus.h"
 
 #define CC_PORT "59420"
 
 static Connector* connector = nullptr;
+
+class MenuPauseLogSink : public BSTEventSink<MenuOpenCloseEvent>
+{
+public:
+	EventResult ReceiveEvent(MenuOpenCloseEvent* evn, EventDispatcher<MenuOpenCloseEvent>* dispatcher) override
+	{
+		MenuManager* menuManager = MenuManager::GetSingleton();
+		UInt32 pauseCount = 0;
+		if (menuManager)
+		{
+			pauseCount = *reinterpret_cast<const UInt32*>(reinterpret_cast<const UInt8*>(menuManager) + 0x160);
+		}
+
+		CCLog::Write("[CC MENU] %s opening=%d pauseCount=%u nativePaused=%d",
+			evn->menuName.c_str(),
+			evn->opening ? 1 : 0,
+			pauseCount,
+			QueryNativeGamePaused() ? 1 : 0);
+		return kEvent_Continue;
+	}
+};
+
+static MenuPauseLogSink g_menuPauseLogSink;
+
+static void RegisterMenuPauseLogging()
+{
+	MenuManager* menuManager = MenuManager::GetSingleton();
+	if (menuManager)
+	{
+		menuManager->MenuOpenCloseEventDispatcher()->AddEventSink(&g_menuPauseLogSink);
+		CCLog::Write("[CC MENU] registered native menu pause logging");
+	}
+}
+
+static void SKSEMessageHandler(SKSEMessagingInterface::Message* message)
+{
+	if (!message)
+	{
+		return;
+	}
+
+	if (message->type == SKSEMessagingInterface::kMessage_PostLoadGame
+		|| message->type == SKSEMessagingInterface::kMessage_NewGame
+		|| message->type == SKSEMessagingInterface::kMessage_InputLoaded)
+	{
+		RegisterMenuPauseLogging();
+	}
+}
+
+bool CrowdControlIsGamePaused(StaticFunctionTag*)
+{
+	return QueryNativeGamePaused();
+}
 
 BSFixedString CrowdControlCheck(StaticFunctionTag*)
 {
@@ -133,6 +191,32 @@ void CrowdControlClearTimers(StaticFunctionTag*)
 	}
 }
 
+void CrowdControlSetGamePaused(StaticFunctionTag*, bool isPaused)
+{
+	if (connector != nullptr)
+	{
+		connector->SetGamePaused(isPaused);
+	}
+}
+
+void CrowdControlRetryQueued(StaticFunctionTag*)
+{
+	if (connector != nullptr)
+	{
+		connector->RetryQueued();
+	}
+}
+
+bool CrowdControlIsCommandFinished(StaticFunctionTag*, SInt32 command_id)
+{
+	if (connector == nullptr || command_id <= 0)
+	{
+		return true;
+	}
+
+	return connector->IsCommandFinished(static_cast<UINT>(command_id));
+}
+
 static CSimpleIniA ini;
 static bool iniLoaded = false;
 
@@ -191,6 +275,10 @@ bool RegisterFuncs(VMClassRegistry* a_registry)
 	a_registry->RegisterFunction(new NativeFunction4<StaticFunctionTag, void, SInt32, SInt32, BSFixedString, SInt32>("CC_Respond", "CrowdControl", CrowdControlRespond, a_registry));
 	a_registry->RegisterFunction(new NativeFunction1<StaticFunctionTag, SInt32, BSFixedString>("CC_HasTimer", "CrowdControl", CrowdControlHasTimer, a_registry));
 	a_registry->RegisterFunction(new NativeFunction0<StaticFunctionTag, void>("CC_ClearTimers", "CrowdControl", CrowdControlClearTimers, a_registry));
+	a_registry->RegisterFunction(new NativeFunction1<StaticFunctionTag, void, bool>("CC_SetGamePaused", "CrowdControl", CrowdControlSetGamePaused, a_registry));
+	a_registry->RegisterFunction(new NativeFunction0<StaticFunctionTag, bool>("CC_IsGamePaused", "CrowdControl", CrowdControlIsGamePaused, a_registry));
+	a_registry->RegisterFunction(new NativeFunction0<StaticFunctionTag, void>("CC_RetryQueued", "CrowdControl", CrowdControlRetryQueued, a_registry));
+	a_registry->RegisterFunction(new NativeFunction1<StaticFunctionTag, bool, SInt32>("CC_IsCommandFinished", "CrowdControl", CrowdControlIsCommandFinished, a_registry));
 	a_registry->RegisterFunction(new NativeFunction2<StaticFunctionTag, SInt32, BSFixedString, BSFixedString>("CC_GetIntSetting", "CrowdControl", GetIntSetting, a_registry));
 	a_registry->RegisterFunction(new NativeFunction2<StaticFunctionTag, float, BSFixedString, BSFixedString>("CC_GetFloatSetting", "CrowdControl", GetFloatSetting, a_registry));
 
@@ -219,6 +307,9 @@ extern "C" {
 
 	bool SKSEPlugin_Query(const SKSEInterface* a_skse, PluginInfo* a_info)
 	{
+		CCLog::Init();
+		CCLog::Write("CrowdControl v%s (Query)", MYFP_VERSION_VERSTRING);
+
 		gLog.OpenRelative(CSIDL_MYDOCUMENTS, "\\My Games\\Skyrim Special Edition\\SKSE\\CrowdControl.log");
 		gLog.SetPrintLevel(IDebugLog::kLevel_DebugMessage);
 		gLog.SetLogLevel(IDebugLog::kLevel_DebugMessage);
@@ -240,6 +331,7 @@ extern "C" {
 
 	bool SKSEPlugin_Load(const SKSEInterface* a_skse)
 	{
+		CCLog::Write("CrowdControl plugin loaded (Load)");
 		_MESSAGE("CrowControlPlugin loaded");
 
 		try
@@ -254,6 +346,15 @@ extern "C" {
 			}
 
 			papyrus->Register(RegisterFuncs);
+
+			const SKSEMessagingInterface* messaging = (SKSEMessagingInterface*)a_skse->QueryInterface(kInterface_Messaging);
+			if (messaging)
+			{
+				messaging->RegisterListener(a_skse->GetPluginHandle(), "SKSE", SKSEMessageHandler);
+			}
+
+			RegisterMenuPauseLogging();
+			connector->ConnectAsync(CC_PORT);
 		}
 		catch (const std::exception& e)
 		{

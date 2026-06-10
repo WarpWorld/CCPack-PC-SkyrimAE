@@ -146,6 +146,8 @@
     <None Include="exports.def" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\CCLog.cpp" />
+    <ClCompile Include="src\GamePause.cpp" />
     <ClCompile Include="src\Connector.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="..\skse64\skse64\GameAPI.cpp" />

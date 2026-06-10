@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using ConnectorLib.SimpleTCP;
 using CrowdControl.Common;
 using JetBrains.Annotations;
@@ -11,6 +12,8 @@ public class SkyrimAE : SimpleTCPPack<SimpleTCPServerConnector>
     public override string Host => "127.0.0.1";
 
     public override ushort Port => 59420;
+
+    public override TimeSpan ResponseTimeout => TimeSpan.FromSeconds(60);
 
     [SuppressMessage("CrowdControl.PackMetadata", "CC1009:Message Format Property")]
     public override ISimpleTCPPack.MessageFormatType MessageFormat => ISimpleTCPPack.MessageFormatType.CrowdControlLegacy;
