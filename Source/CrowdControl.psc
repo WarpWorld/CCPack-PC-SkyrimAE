@@ -109,6 +109,9 @@ Int lastCommandType = -1
 Float jumpReducedBy
 Bool weatherOverride
 Bool jumpIncreased
+spell[] GoodSpells
+spell[] BadSpells
+Bool randomSpellsInitialized = false
 
 ;-- Functions ---------------------------------------
 
@@ -1170,18 +1173,45 @@ function OnUpdate()
 	endIf
 endFunction
 
+function InitRandomSpellLists()
+
+	if randomSpellsInitialized
+		return 
+	endIf
+	GoodSpells = new spell[8]
+	GoodSpells[0] = game.GetFormFromFile(372062, "Skyrim.esm") as spell
+	GoodSpells[1] = game.GetFormFromFile(842608, "Skyrim.esm") as spell
+	GoodSpells[2] = game.GetFormFromFile(768359, "Skyrim.esm") as spell
+	GoodSpells[3] = game.GetFormFromFile(1105388, "Skyrim.esm") as spell
+	GoodSpells[4] = game.GetFormFromFile(768360, "Skyrim.esm") as spell
+	GoodSpells[5] = game.GetFormFromFile(910609, "Skyrim.esm") as spell
+	GoodSpells[6] = game.GetFormFromFile(163510, "Skyrim.esm") as spell
+	GoodSpells[7] = game.GetFormFromFile(193464, "Skyrim.esm") as spell
+	BadSpells = new spell[4]
+	BadSpells[0] = game.GetFormFromFile(8940, "CrowdControl.esp") as spell
+	BadSpells[1] = game.GetFormFromFile(10322, "CrowdControl.esp") as spell
+	BadSpells[2] = game.GetFormFromFile(10320, "CrowdControl.esp") as spell
+	BadSpells[3] = game.GetFormFromFile(10326, "CrowdControl.esp") as spell
+	randomSpellsInitialized = true
+endFunction
+
 function CastRandomSpell(Int id, String viewer, Bool good)
 
 	if !good && CrowdControl.CC_HasTimer("bad_spell") as Bool
 		self.Respond(id, 3, "", 0)
 		return 
 	endIf
-	Int spellIndex = utility.RandomInt(0, Spells.length - 1)
-	spell selectedSpell = Spells[spellIndex]
-	Int spellTarget = SpellsTarget[spellIndex]
-	Actor curTarget = game.GetPlayer().GetCombatTarget()
-	if curTarget == none && (good && spellTarget == 1 || !good && spellTarget == 0)
-		self.CastRandomSpell(id, viewer, good)
+	self.InitRandomSpellLists()
+	spell[] spellList
+	if good
+		spellList = GoodSpells
+	else
+		spellList = BadSpells
+	endIf
+	Int spellIndex = utility.RandomInt(0, spellList.length - 1)
+	spell selectedSpell = spellList[spellIndex]
+	if selectedSpell == none
+		self.Respond(id, 1, "", 0)
 		return 
 	endIf
 	String spellName = selectedSpell.GetName()
@@ -1192,13 +1222,8 @@ function CastRandomSpell(Int id, String viewer, Bool good)
 	if !good
 		status = 4
 	endIf
-	if good && spellTarget == 0 || !good && spellTarget == 1
-		self.Respond(id, status, viewer + " casted " + spellName + " on player", 3000)
-		selectedSpell.Cast(self as ObjectReference, self as ObjectReference)
-	else
-		self.Respond(id, status, viewer + " casted " + spellName + " on enemy", 3000)
-		selectedSpell.Cast(curTarget as ObjectReference, curTarget as ObjectReference)
-	endIf
+	self.Respond(id, status, viewer + " casted " + spellName + " on player", 3000)
+	selectedSpell.Cast(self as ObjectReference, self as ObjectReference)
 endFunction
 
 function PrintMessage(String _message)
@@ -1276,6 +1301,7 @@ function OnInit()
     lastState = ""
 	lastCommandId = -1
 	lastCommandType = -1
+	self.InitRandomSpellLists()
 	self.RegisterForUpdate(0.500000)
 endFunction
 
