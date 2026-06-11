@@ -13,7 +13,7 @@ public class SkyrimAE : SimpleTCPPack<SimpleTCPServerConnector>
 
     public override ushort Port => 59420;
 
-    public override TimeSpan ResponseTimeout => TimeSpan.FromSeconds(60);
+    public override SITimeSpan ResponseTimeout => 60f;
 
     [SuppressMessage("CrowdControl.PackMetadata", "CC1009:Message Format Property")]
     public override ISimpleTCPPack.MessageFormatType MessageFormat => ISimpleTCPPack.MessageFormatType.CrowdControlLegacy;
