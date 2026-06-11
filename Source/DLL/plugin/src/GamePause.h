@@ -3,4 +3,8 @@
 void OnMenuOpenClose(const char* menuName, bool opening);
 
 bool QueryNativeGamePaused();
-bool QueryEffectsBlocked();
+bool QueryTitleScreenActive();
+bool QueryLoadingScreenActive();
+bool QueryCutsceneScreenActive();
+bool QueryPlayerAbsent();
+bool QueryPlayerDead();

@@ -62,6 +62,10 @@ class Connector
 	std::atomic<bool> menuOpened{ false };
 	std::atomic<bool> gamePaused{ false };
 	bool timedEffectsPaused{ false };
+	bool m_game_update_requested{ false };
+	UINT m_game_update_request_id{ 0 };
+	bool m_has_last_game_state{ false };
+	int m_last_game_state{ 0 };
 
 	std::string socketBuffer;
 
@@ -75,6 +79,10 @@ class Connector
 	void CloseSocket();
 	void StopBackgroundThreads();
 	bool ParseCommand(const std::string& json, UINT& command_id, std::string& command_code, std::string& command_viewer, int& command_type, int& command_dur);
+	bool TryHandleSystemMessage(const std::string& json);
+	void SendGameUpdate(UINT request_id, int state);
+	bool PollGameUpdateRequest(UINT& out_id);
+	void PublishGameState();
 
 	void _RunTimer();
 	void _Run();

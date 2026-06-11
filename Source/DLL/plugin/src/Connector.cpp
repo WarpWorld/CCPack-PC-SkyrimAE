@@ -1,6 +1,7 @@
 #include "Connector.h"
 #include "CCLog.h"
 #include "GamePause.h"
+#include "GameState.h"
 
 #include <ws2tcpip.h>
 #include <stdio.h>
@@ -418,12 +419,16 @@ bool Connector::Connect(const char* port)
 			std::lock_guard lock(m_mutex);
 			completed_ids.clear();
 			completed_responses.clear();
+			m_game_update_requested = false;
+			m_game_update_request_id = 0;
+			m_has_last_game_state = false;
 		}
 		ResetError();
 		connecting.store(false);
 		CCLog::Write("[CC CONNECT] connected to 127.0.0.1:%s", port);
 		Run();
 		EnsureTimerThread();
+		PublishGameState();
 		return true;
 	}
 	catch (const std::exception& e)
@@ -708,14 +713,148 @@ long long Connector::GetElapsedTime(std::chrono::steady_clock::time_point time) 
 	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - time).count();
 }
 
+void Connector::SendGameUpdate(UINT request_id, int state)
+{
+	if (m_socket == INVALID_SOCKET)
+	{
+		return;
+	}
+
+	rapidjson::Document data;
+	data.SetObject();
+	auto& allocator = data.GetAllocator();
+	data.AddMember("id", static_cast<UINT>(request_id), allocator);
+	data.AddMember("type", kResponseTypeGameUpdate, allocator);
+	data.AddMember("state", state, allocator);
+
+	rapidjson::StringBuffer buf;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+	data.Accept(writer);
+	buf.Put('\0');
+
+	SendSocket(buf.GetString(), buf.GetLength());
+	CCLog::Write("[CC STATE] id=%u type=%d state=%d (%s)",
+		request_id,
+		kResponseTypeGameUpdate,
+		state,
+		GameStateName(state));
+}
+
+bool Connector::PollGameUpdateRequest(UINT& out_id)
+{
+	std::lock_guard lock(m_mutex);
+	if (!m_game_update_requested)
+	{
+		return false;
+	}
+
+	out_id = m_game_update_request_id;
+	m_game_update_requested = false;
+	m_game_update_request_id = 0;
+	return true;
+}
+
+void Connector::PublishGameState()
+{
+	if (!IsConnected())
+	{
+		return;
+	}
+
+	const int state = QueryGameState();
+	UINT request_id = 0;
+	const bool requested = PollGameUpdateRequest(request_id);
+	const bool changed = !m_has_last_game_state || m_last_game_state != state;
+	if (!requested && !changed)
+	{
+		return;
+	}
+
+	m_has_last_game_state = true;
+	m_last_game_state = state;
+	SendGameUpdate(requested ? request_id : 0, state);
+}
+
+bool Connector::TryHandleSystemMessage(const std::string& json)
+{
+	rapidjson::Document data;
+	data.Parse(json.c_str());
+	if (!data.IsObject() || !data.HasMember("type") || !data["type"].IsInt())
+	{
+		return false;
+	}
+
+	const int message_type = data["type"].GetInt();
+	if (message_type == kRequestTypeKeepAlive)
+	{
+		CCLog::Write("[CC IN] keepalive");
+		return true;
+	}
+
+	if (message_type == kRequestTypePlayerInfo)
+	{
+		CCLog::Write("[CC IN] playerinfo ignored");
+		return true;
+	}
+
+	if (message_type == kRequestTypeLogin)
+	{
+		UINT login_id = 0;
+		if (data.HasMember("id"))
+		{
+			if (data["id"].IsUint())
+			{
+				login_id = data["id"].GetUint();
+			}
+			else if (data["id"].IsInt() && data["id"].GetInt() >= 0)
+			{
+				login_id = static_cast<UINT>(data["id"].GetInt());
+			}
+		}
+
+		CCLog::Write("[CC IN] login id=%u ignored", login_id);
+		return true;
+	}
+
+	if (message_type == kRequestTypeGameUpdate)
+	{
+		UINT update_id = 0;
+		if (data.HasMember("id"))
+		{
+			if (data["id"].IsUint())
+			{
+				update_id = data["id"].GetUint();
+			}
+			else if (data["id"].IsInt() && data["id"].GetInt() >= 0)
+			{
+				update_id = static_cast<UINT>(data["id"].GetInt());
+			}
+		}
+
+		{
+			std::lock_guard lock(m_mutex);
+			m_game_update_requested = true;
+			m_game_update_request_id = update_id;
+		}
+
+		CCLog::Write("[CC IN] game update request id=%u", update_id);
+		PublishGameState();
+		return true;
+	}
+
+	return false;
+}
+
 void Connector::_RunTimer()
 {
 	checking.store(true);
 	while (!m_shutdown.load())
 	{
-		Sleep(500);
+		Sleep(100);
 		try
 		{
+			PublishGameState();
+
 			std::vector<std::pair<UINT, long long>> pauseResumeUpdates;
 			{
 				std::lock_guard guard(m_mutex);
@@ -886,6 +1025,11 @@ void Connector::_Run()
 						continue;
 					}
 
+					if (TryHandleSystemMessage(c))
+					{
+						continue;
+					}
+
 					UINT command_id = 0;
 					std::string command_code;
 					std::string command_viewer;
@@ -915,15 +1059,15 @@ void Connector::_Run()
 					}
 
 					const bool paused = IsGamePaused();
-					CCLog::Write("[CC IN] id=%u code=%s type=%d duration=%d viewer=%s state=%d paused=%d native=%d raw=%s",
+					CCLog::Write("[CC IN] id=%u code=%s type=%d duration=%d viewer=%s state=%d gameState=%s paused=%d raw=%s",
 						command_id,
 						command_code.c_str(),
 						command_type,
 						command_dur,
 						command_viewer.c_str(),
 						inboundState,
+						GameStateName(QueryGameState()),
 						paused ? 1 : 0,
-						QueryNativeGamePaused() ? 1 : 0,
 						c.c_str());
 
 					if (inboundState == 1)

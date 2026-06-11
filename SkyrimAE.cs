@@ -28,6 +28,9 @@ public class SkyrimAE : SimpleTCPPack<SimpleTCPServerConnector>
         }));*/
     }
 
+    protected override SITimeSpan GameStateCheckInterval { get; } = 0.5f;
+
+
     public override bool StopAllEffects() => true;
 
     public override Game Game { get; } = new("The Elder Scrolls V: Skyrim Special Edition", "SkyrimAE", "PC", ConnectorType.SimpleTCPServerConnector);

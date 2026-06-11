@@ -11,6 +11,7 @@
 #include "Connector.h"
 #include "CCLog.h"
 #include "GamePause.h"
+#include "GameState.h"
 
 #include "skse64/GameEvents.h"
 #include "skse64/GameMenus.h"
@@ -33,12 +34,12 @@ public:
 
 		OnMenuOpenClose(evn->menuName.c_str(), evn->opening != 0);
 
-		CCLog::Write("[CC MENU] %s opening=%d pauseCount=%u nativePaused=%d blocked=%d",
+		CCLog::Write("[CC MENU] %s opening=%d pauseCount=%u nativePaused=%d gameState=%s",
 			evn->menuName.c_str(),
 			evn->opening ? 1 : 0,
 			pauseCount,
 			QueryNativeGamePaused() ? 1 : 0,
-			QueryEffectsBlocked() ? 1 : 0);
+			GameStateName(QueryGameState()));
 		return kEvent_Continue;
 	}
 };

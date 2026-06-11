@@ -11,7 +11,9 @@
 namespace
 {
 	std::mutex g_menuMutex;
-	std::set<std::string> g_openBlockingMenus;
+	std::set<std::string> g_openTitleMenus;
+	std::set<std::string> g_openLoadingMenus;
+	std::set<std::string> g_openCutsceneMenus;
 
 	UInt32 ReadMenuPauseCount(const MenuManager* menuManager)
 	{
@@ -23,25 +25,19 @@ namespace
 		return *reinterpret_cast<const UInt8*>(reinterpret_cast<const UInt8*>(menuManager) + 0x17C);
 	}
 
-	bool IsBlockingMenuName(const char* menuName)
+	bool IsTitleMenuName(const char* menuName)
 	{
-		if (!menuName || !menuName[0])
-		{
-			return false;
-		}
-
-		static const char* kBlockingMenus[] = {
+		static const char* kTitleMenus[] = {
 			"Main Menu",
 			"Start Menu",
-			"Loading Menu",
-			"Credits Menu",
 			"PlayMenu",
+			"Credits Menu",
 			nullptr
 		};
 
-		for (size_t i = 0; kBlockingMenus[i]; ++i)
+		for (size_t i = 0; kTitleMenus[i]; ++i)
 		{
-			if (_stricmp(menuName, kBlockingMenus[i]) == 0)
+			if (_stricmp(menuName, kTitleMenus[i]) == 0)
 			{
 				return true;
 			}
@@ -50,40 +46,69 @@ namespace
 		return false;
 	}
 
-	bool QueryBlockingMenuOpen()
+	bool IsLoadingMenuName(const char* menuName)
 	{
-		std::lock_guard lock(g_menuMutex);
-		return !g_openBlockingMenus.empty();
+		return _stricmp(menuName, "Loading Menu") == 0
+			|| _stricmp(menuName, "LoadWaitSpinner") == 0;
 	}
 
-	bool QueryPlayerDeadOrAbsent()
+	bool IsCutsceneMenuName(const char* menuName)
 	{
-		PlayerCharacter* player = *g_thePlayer;
-		if (!player)
+		static const char* kCutsceneMenus[] = {
+			"Movie Picker",
+			"Favor Menu",
+			"Intro Menu",
+			nullptr
+		};
+
+		for (size_t i = 0; kCutsceneMenus[i]; ++i)
 		{
-			return true;
+			if (_stricmp(menuName, kCutsceneMenus[i]) == 0)
+			{
+				return true;
+			}
 		}
 
-		return player->IsDead(1);
+		return false;
+	}
+
+	bool IsMenuSetOpen(const std::set<std::string>& menus)
+	{
+		std::lock_guard lock(g_menuMutex);
+		return !menus.empty();
 	}
 }
 
 void OnMenuOpenClose(const char* menuName, bool opening)
 {
-	if (!IsBlockingMenuName(menuName))
+	if (!menuName || !menuName[0])
 	{
 		return;
 	}
 
 	std::lock_guard lock(g_menuMutex);
-	if (opening)
+	const std::string name(menuName);
+
+	auto update = [&](std::set<std::string>& menus, bool tracked)
 	{
-		g_openBlockingMenus.insert(menuName);
-	}
-	else
-	{
-		g_openBlockingMenus.erase(menuName);
-	}
+		if (!tracked)
+		{
+			return;
+		}
+
+		if (opening)
+		{
+			menus.insert(name);
+		}
+		else
+		{
+			menus.erase(name);
+		}
+	};
+
+	update(g_openTitleMenus, IsTitleMenuName(menuName));
+	update(g_openLoadingMenus, IsLoadingMenuName(menuName));
+	update(g_openCutsceneMenus, IsCutsceneMenuName(menuName));
 }
 
 bool QueryNativeGamePaused()
@@ -104,22 +129,38 @@ bool QueryNativeGamePaused()
 	return pauseCount > 0 || modalCount > 0;
 }
 
-bool QueryEffectsBlocked()
+bool QueryTitleScreenActive()
 {
-	if (QueryNativeGamePaused())
+	return IsMenuSetOpen(g_openTitleMenus);
+}
+
+bool QueryLoadingScreenActive()
+{
+	if (IsMenuSetOpen(g_openLoadingMenus))
 	{
 		return true;
 	}
 
-	if (QueryBlockingMenuOpen())
+	return QueryPlayerAbsent() && !QueryTitleScreenActive();
+}
+
+bool QueryCutsceneScreenActive()
+{
+	return IsMenuSetOpen(g_openCutsceneMenus);
+}
+
+bool QueryPlayerAbsent()
+{
+	return *g_thePlayer == nullptr;
+}
+
+bool QueryPlayerDead()
+{
+	PlayerCharacter* player = *g_thePlayer;
+	if (!player)
 	{
-		return true;
+		return false;
 	}
 
-	if (QueryPlayerDeadOrAbsent())
-	{
-		return true;
-	}
-
-	return false;
+	return player->IsDead(1);
 }
