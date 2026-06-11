@@ -129,7 +129,7 @@ void Connector::SetGamePaused(bool isPaused)
 
 bool Connector::IsGamePaused() const
 {
-	if (QueryNativeGamePaused())
+	if (QueryEffectsBlocked())
 	{
 		return true;
 	}
@@ -144,7 +144,7 @@ bool Connector::IsTransientResponse(SInt32 status) const
 
 bool Connector::IsGamePausedForTimers() const
 {
-	return QueryNativeGamePaused() || gamePaused.load() || menuOpened.load();
+	return QueryEffectsBlocked() || gamePaused.load() || menuOpened.load();
 }
 
 long long Connector::GetTimerRemainingMs(const Command& command) const
@@ -517,26 +517,36 @@ bool Connector::SendResponseSocket(UINT command_id, SInt32 status, const char* m
 
 void Connector::RetryQueuedCommands()
 {
-	std::vector<UINT> queuedIds;
+	std::set<UINT> queuedIdSet;
 	{
 		std::lock_guard lock(m_mutex);
 		for (const auto& entry : command_map)
 		{
 			if (completed_ids.find(entry.first) == completed_ids.end())
 			{
-				queuedIds.push_back(entry.first);
+				queuedIdSet.insert(entry.first);
+			}
+		}
+
+		for (const auto& entry : pending_map)
+		{
+			if (completed_ids.find(entry.first) == completed_ids.end())
+			{
+				queuedIdSet.insert(entry.first);
 			}
 		}
 	}
+
+	std::vector<UINT> queuedIds(queuedIdSet.begin(), queuedIdSet.end());
 
 	if (queuedIds.empty())
 	{
 		return;
 	}
 
-	CCLog::Write("[CC RETRY-QUEUE] sending status=3 for %d queued command(s) paused=%d",
+	CCLog::Write("[CC RETRY-QUEUE] sending status=3 for %d queued command(s) blocked=%d",
 		static_cast<int>(queuedIds.size()),
-		(gamePaused.load() || menuOpened.load()) ? 1 : 0);
+		QueryEffectsBlocked() ? 1 : 0);
 
 	for (const UINT commandId : queuedIds)
 	{

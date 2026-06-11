@@ -951,18 +951,16 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		PoliceFaction.SendPlayerToJail(true, true)
 		self.Respond(id, 0, viewer + " sent you to jail", 0)
 	elseIf command == "launch_player"
-
-		Debug.Notification("Testing Launch Effect")
-
-		Float launchPower = CrowdControl.CC_GetFloatSetting("General", "launchPower")
-		if launchPower <= 0 as Float
-			launchPower = 20 as Float
+		if player.IsDead()
+			self.Respond(id, 3, "", 0)
+		else
+			Float launchPower = CrowdControl.CC_GetFloatSetting("General", "launchPower")
+			if launchPower <= 0 as Float
+				launchPower = 20 as Float
+			endIf
+			self.LaunchPlayer(launchPower)
+			self.Respond(id, 0, viewer + " launched you", 0)
 		endIf
-		player.PlaceAtMe(launchMarker as form, 1, false, false)
-		launchMarker.MoveTo(player as ObjectReference, 0, 0, 10 as Float, true)
-		launchMarker.MoveTo(player as ObjectReference, 0, 0, -50 as Float, true)
-		launchMarker.PushActorAway(player, launchPower)
-		self.Respond(id, 0, viewer + " launched you", 0)
 	elseIf command == "give_dragonbone"
 		miscobject target = ItemList[0]
 		player.AddItem(target as form, 1, false)
@@ -992,15 +990,19 @@ function ProcessCommand(Int id, String command, String viewer, Int type)
 		player.AddItem(target as form, 1, false)
 		self.Respond(id, 0, viewer + " gave you an steel ingot", 0)
 	elseIf command == "launch_player_2"
-		player.PlaceAtMe(launchMarker as form, 1, false, false)
-		launchMarker.MoveTo(player as ObjectReference, 0 as Float, 0 as Float, -50 as Float, true)
-		launchMarker.PushActorAway(player, 50 as Float)
-		self.Respond(id, 0, viewer + " launched you", 0)
+		if player.IsDead()
+			self.Respond(id, 3, "", 0)
+		else
+			self.LaunchPlayer(50 as Float)
+			self.Respond(id, 0, viewer + " launched you", 0)
+		endIf
 	elseIf command == "launch_player_3"
-		player.PlaceAtMe(launchMarker as form, 1, false, false)
-		launchMarker.MoveTo(player as ObjectReference, 0 as Float, 0 as Float, -50 as Float, true)
-		launchMarker.PushActorAway(player, 100 as Float)
-		self.Respond(id, 0, viewer + " launched you", 0)
+		if player.IsDead()
+			self.Respond(id, 3, "", 0)
+		else
+			self.LaunchPlayer(100 as Float)
+			self.Respond(id, 0, viewer + " launched you", 0)
+		endIf
 	elseIf command == "disable_fast_travel"
 		if type == 1
 			if CrowdControl.CC_HasTimer("disable_fast_travel")
@@ -1189,8 +1191,12 @@ function OnUpdate()
 	elseIf newState == "stopped"
 		CrowdControl.CC_Run()
 	endIf
-	if newState != "disconnected" && newState != "uninitialized" && !self.IsGamePaused()
-		self.RunCommands()
+	if newState != "disconnected" && newState != "uninitialized"
+		if self.IsGamePaused()
+			CrowdControl.CC_RetryQueued()
+		else
+			self.RunCommands()
+		endIf
 	endIf
 endFunction
 
@@ -1293,6 +1299,70 @@ function CastRandomSpell(Int id, String viewer, Bool good)
 	self.Respond(id, status, viewer + " casted " + spellName + " on player", 3000)
 endFunction
 
+function EnsureLaunchMarker()
+
+	if player == none
+		player = game.GetPlayer()
+	endIf
+	if launchMarker == none
+		launchMarker = player.PlaceAtMe(game.GetFormFromFile(0x0003AD5E, "Skyrim.esm"), 1, false, false)
+	endIf
+endFunction
+
+function LaunchPlayer(Float power)
+
+	if player == none
+		player = game.GetPlayer()
+	endIf
+	if player.IsDead()
+		return 
+	endIf
+
+	if launchMarker != none
+		launchMarker.Delete()
+		launchMarker = none
+	endIf
+	self.EnsureLaunchMarker()
+
+	if power < 75.0
+		power = 75.0
+	endIf
+
+	Bool preserveFreeze = CrowdControl.CC_HasTimer("freeze") as Bool
+
+	player.ForceRemoveRagdollFromWorld()
+	if !preserveFreeze
+		player.SetRestrained(false)
+	endIf
+	game.DisablePlayerControls(true, false, false, false, false, false, false, false, 0)
+
+	utility.Wait(0.05)
+
+	Float posX = player.GetPositionX()
+	Float posY = player.GetPositionY()
+	Float posZ = player.GetPositionZ()
+	Float liftHeight = power * 5.0
+	if liftHeight < 250.0
+		liftHeight = 250.0
+	endIf
+
+	if player.Is3DLoaded()
+		launchMarker.MoveTo(player as ObjectReference, 0.0, 0.0, -25.0, true)
+		launchMarker.SetAngle(90.0, 0.0, 0.0)
+		launchMarker.PushActorAway(player, power)
+		player.ApplyHavokImpulse(0.0, 0.0, 1.0, power * 6.0)
+	endIf
+
+	player.TranslateTo(posX, posY, posZ + liftHeight, 0.0, 0.0, 0.0, 2000.0, 0.0)
+
+	utility.Wait(0.1)
+
+	if !preserveFreeze
+		player.SetRestrained(false)
+	endIf
+	game.EnablePlayerControls(true, false, false, false, false, false, false, false, 0)
+endFunction
+
 function SpawnCheeseRain()
 
 	if player == none
@@ -1334,12 +1404,14 @@ endFunction
 function RunCommands()
 
 	if self.IsGamePaused()
+		CrowdControl.CC_RetryQueued()
 		return 
 	endIf
 	if player == none
 		player = game.GetPlayer()
 	endIf
 	if player.IsDead()
+		CrowdControl.CC_RetryQueued()
 		return 
 	endIf
 	Int processed = 0
@@ -1365,6 +1437,10 @@ function RunCommands()
 	            Respond(commandId, 1, "Crowd Control stopped during Diplomatic Immunity", 0)
 	            return
 	        endif	
+			if self.IsGamePaused() || player.IsDead()
+				CrowdControl.CC_RetryQueued()
+				return
+			endIf
 			if previousBatchId == commandId && previousBatchType == commandType
 				self.Respond(commandId, 0, "", 0)
 			else
@@ -1486,9 +1562,7 @@ function OnPlayerLoadGame()
 	game.EnablePlayerControls(false, false, false, false, true, false, false, true, 0)
 	game.EnableFastTravel(true)
 	player = game.GetPlayer()
-	if launchMarker == none
-		launchMarker = player.PlaceAtMe(game.GetFormFromFile(52, "Skyrim.ESM"), 1, false, false)
-	endIf
+	self.EnsureLaunchMarker()
 	if weatherOverride
 		weatherOverride = false
 		weather.ReleaseOverride()

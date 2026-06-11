@@ -31,11 +31,14 @@ public:
 			pauseCount = *reinterpret_cast<const UInt32*>(reinterpret_cast<const UInt8*>(menuManager) + 0x160);
 		}
 
-		CCLog::Write("[CC MENU] %s opening=%d pauseCount=%u nativePaused=%d",
+		OnMenuOpenClose(evn->menuName.c_str(), evn->opening != 0);
+
+		CCLog::Write("[CC MENU] %s opening=%d pauseCount=%u nativePaused=%d blocked=%d",
 			evn->menuName.c_str(),
 			evn->opening ? 1 : 0,
 			pauseCount,
-			QueryNativeGamePaused() ? 1 : 0);
+			QueryNativeGamePaused() ? 1 : 0,
+			QueryEffectsBlocked() ? 1 : 0);
 		return kEvent_Continue;
 	}
 };
@@ -69,7 +72,7 @@ static void SKSEMessageHandler(SKSEMessagingInterface::Message* message)
 
 bool CrowdControlIsGamePaused(StaticFunctionTag*)
 {
-	return QueryNativeGamePaused();
+	return QueryEffectsBlocked();
 }
 
 BSFixedString CrowdControlCheck(StaticFunctionTag*)
