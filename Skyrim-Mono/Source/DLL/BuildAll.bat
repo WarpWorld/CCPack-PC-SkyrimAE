@@ -37,15 +37,6 @@ echo Building CrowdControl plugin - Old 1.6.640...
 "%MSBUILD%" "%PLUGIN_DIR%\CrowdControlPlugin.vcxproj" /p:Configuration=Release_Old640 %MSBUILD_ARGS%
 if errorlevel 1 exit /b 1
 
-if exist "%DLL_ROOT%sksevr\skse64_common\skse64_common.vcxproj" goto BuildVR
-echo Skipping VR build - full sksevr SDK not linked.
-goto CompilePapyrus
-
-:BuildVR
-echo Building skse64_common (SKSEVR)...
-"%MSBUILD%" "%DLL_ROOT%sksevr\skse64_common\skse64_common.vcxproj" /p:Configuration=Release %MSBUILD_ARGS%
-if errorlevel 1 exit /b 1
-
 echo Building CrowdControl plugin - VR...
 "%MSBUILD%" "%PLUGIN_DIR%\CrowdControlPluginVR.vcxproj" /p:Configuration=Release %MSBUILD_ARGS%
 if errorlevel 1 exit /b 1

@@ -29,8 +29,8 @@ Skyrim-Mono/
 
 - Visual Studio 2022 with C++ desktop workload (MSBuild `v143`)
 - Skyrim Special Edition install (for Papyrus compiler), or set `SKYRIM_SE`
-- SKSE64 source tree (default: junctions from `CCPack-PC-SkyrimAEGOG`)
-- SKSEVR source tree for VR builds (full `sksevr` SDK with `skse64` and `skse64_common`, not just the plugin subfolder)
+- SKSE64 source tree (default: junctions from `CCPack-PC-SkyrimAEGOG`) — used for all four `CrowdControl.dll` builds, including VR
+- SKSEVR 2.0.12 binaries for packaging (`sksevr_loader.exe`, etc.) from [skse.silverlock.org](https://skse.silverlock.org/) or your existing VR pack
 
 ## Build
 
@@ -43,7 +43,7 @@ BuildAll.bat
 Optional environment variables:
 
 - `SKSE64_SRC` — folder with `common`, `skse64`, `skse64_common`, loaders
-- `SKSEVR_SRC` — folder containing `sksevr`
+- `SKSEVR_SRC` — optional; only links the old `sksevr\plugin` tree if you still use `sksevr.sln` for reference (not required for `BuildAll.bat`)
 - `SKYRIM_SE` — Skyrim AE install path for Papyrus compile
 
 ## Native targets
@@ -53,9 +53,11 @@ Optional environment variables:
 | `Release_Steam1170` | Steam 1.6.1170 | `Plugins/Skyrim AE Plugin` |
 | `Release_GOG1179` | GOG 1.6.1179 | `Plugins/Skyrim AE GOG Plugin` |
 | `Release_Old640` | Steam 1.6.640 | `Plugins/Skyrim AE Old Plugin` |
-| `CrowdControlPluginVR` Release | SKSEVR | `Plugins/Skyrim VR Plugin` |
+| `CrowdControlPluginVR` Release | SKSEVR (game 1.4.15) | `Plugins/Skyrim VR Plugin` |
 
-Target selection is defined in `Source/DLL/configs/Runtime.*.props` and `plugin/include/SkyrimTargetConfig.h`.
+Target selection is defined in `Source/DLL/configs/Runtime.*.props` and `plugin/include/SkyrimTargetConfig.h`. The VR plugin uses the same SKSE64 headers/libs as AE but sets `CC_TARGET_VR` (VR log path, no `SKSEPlugin_Version` export — same pattern as the old VR pack).
+
+**VR runtime note:** Game struct offsets in `GamePause.cpp` / `main.cpp` were tuned on AE. If pause detection misbehaves in VR, you may need VR-specific offsets or a SKSEVR-era `GameAPI` tree; the build will still succeed with the AE SDK.
 
 ## SKSE loaders
 

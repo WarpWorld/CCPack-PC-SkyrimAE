@@ -32,8 +32,6 @@
     <OutDir>$(SkseRoot)x64\Release_VR\</OutDir>
     <IntDir>$(ProjectDir)x64\Release_VR\</IntDir>
     <TargetName>CrowdControl</TargetName>
-    <Skse64Subdir>sksevr</Skse64Subdir>
-    <Skse64Root>$(SkseRoot)sksevr</Skse64Root>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -48,8 +46,6 @@
       <CompileAs>CompileAsCpp</CompileAs>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
-      <AdditionalIncludeDirectories>$(SkseRoot)common;$(Skse64Root);$(ProjectDir)include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>IPrefix.h</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
@@ -57,7 +53,7 @@
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalDependencies>$(SkseRoot)common\x64_v143\Release\common_vc14.lib;$(Skse64Root)\skse64_common\x64\Release\skse64_common.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SkseRoot)common\x64_v143\Release\common_vc14.lib;$(SkseRoot)skse64_common\x64\Release\skse64_common.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>if not exist "$(CCPluginOutputDir)" mkdir "$(CCPluginOutputDir)"
@@ -73,12 +69,12 @@ copy /Y "$(TargetPath)" "$(CCPluginOutputDir)\CrowdControl.dll"</Command>
     <ClCompile Include="src\GameState.cpp" />
     <ClCompile Include="src\Connector.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="..\sksevr\skse64\GameAPI.cpp" Condition="Exists('..\sksevr\skse64\GameAPI.cpp')" />
-    <ClCompile Include="..\sksevr\skse64\GameTypes.cpp" Condition="Exists('..\sksevr\skse64\GameTypes.cpp')" />
-    <ClCompile Include="..\sksevr\skse64\GameUtilities.cpp" Condition="Exists('..\sksevr\skse64\GameUtilities.cpp')" />
-    <ClCompile Include="..\sksevr\skse64\PapyrusArgs.cpp" Condition="Exists('..\sksevr\skse64\PapyrusArgs.cpp')" />
-    <ClCompile Include="..\sksevr\skse64\PapyrusInterfaces.cpp" Condition="Exists('..\sksevr\skse64\PapyrusInterfaces.cpp')" />
-    <ClCompile Include="..\sksevr\skse64\PapyrusVM.cpp" Condition="Exists('..\sksevr\skse64\PapyrusVM.cpp')" />
+    <ClCompile Include="..\skse64\GameAPI.cpp" />
+    <ClCompile Include="..\skse64\GameTypes.cpp" />
+    <ClCompile Include="..\skse64\GameUtilities.cpp" />
+    <ClCompile Include="..\skse64\PapyrusArgs.cpp" />
+    <ClCompile Include="..\skse64\PapyrusInterfaces.cpp" />
+    <ClCompile Include="..\skse64\PapyrusVM.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\version.h" />

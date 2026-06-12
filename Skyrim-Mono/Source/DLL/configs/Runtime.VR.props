@@ -2,7 +2,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <CCPluginOutputDir>$(MSBuildThisFileDirectory)..\..\..\Plugins\Skyrim VR Plugin\Data\SKSE\Plugins</CCPluginOutputDir>
-    <Skse64Subdir>sksevr</Skse64Subdir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
