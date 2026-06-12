@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <CCPluginOutputDir>$(MSBuildThisFileDirectory)..\..\..\Plugins\Skyrim VR Plugin\Data\SKSE\Plugins</CCPluginOutputDir>
+    <Skse64Subdir>sksevr</Skse64Subdir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>CC_TARGET_VR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>

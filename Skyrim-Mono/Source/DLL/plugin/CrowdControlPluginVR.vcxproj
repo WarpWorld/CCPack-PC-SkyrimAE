@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>CrowdControlPluginVR</ProjectName>
+    <ProjectGuid>{B2C3D4E5-F6A7-8901-BCDE-F12345678901}</ProjectGuid>
+    <RootNamespace>CrowdControl</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\configs\Runtime.VR.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SkseRoot)x64\Release_VR\</OutDir>
+    <IntDir>$(ProjectDir)x64\Release_VR\</IntDir>
+    <TargetName>CrowdControl</TargetName>
+    <Skse64Subdir>sksevr</Skse64Subdir>
+    <Skse64Root>$(SkseRoot)sksevr</Skse64Root>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;PLUGIN_EXAMPLE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <AdditionalIncludeDirectories>$(SkseRoot)common;$(Skse64Root);$(ProjectDir)include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>IPrefix.h</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalDependencies>$(SkseRoot)common\x64_v143\Release\common_vc14.lib;$(Skse64Root)\skse64_common\x64\Release\skse64_common.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>if not exist "$(CCPluginOutputDir)" mkdir "$(CCPluginOutputDir)"
+copy /Y "$(TargetPath)" "$(CCPluginOutputDir)\CrowdControl.dll"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="exports.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\CCLog.cpp" />
+    <ClCompile Include="src\GamePause.cpp" />
+    <ClCompile Include="src\GameState.cpp" />
+    <ClCompile Include="src\Connector.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="..\sksevr\skse64\GameAPI.cpp" Condition="Exists('..\sksevr\skse64\GameAPI.cpp')" />
+    <ClCompile Include="..\sksevr\skse64\GameTypes.cpp" Condition="Exists('..\sksevr\skse64\GameTypes.cpp')" />
+    <ClCompile Include="..\sksevr\skse64\GameUtilities.cpp" Condition="Exists('..\sksevr\skse64\GameUtilities.cpp')" />
+    <ClCompile Include="..\sksevr\skse64\PapyrusArgs.cpp" Condition="Exists('..\sksevr\skse64\PapyrusArgs.cpp')" />
+    <ClCompile Include="..\sksevr\skse64\PapyrusInterfaces.cpp" Condition="Exists('..\sksevr\skse64\PapyrusInterfaces.cpp')" />
+    <ClCompile Include="..\sksevr\skse64\PapyrusVM.cpp" Condition="Exists('..\sksevr\skse64\PapyrusVM.cpp')" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\version.h" />
+    <ClInclude Include="include\SkyrimTargetConfig.h" />
+    <ClInclude Include="src\Connector.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="version.rc" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>
